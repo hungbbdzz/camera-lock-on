@@ -1,0 +1,16 @@
+Camera Lock-On source update
+
+Extract this ZIP into the project root and allow it to replace src/main.
+
+Implemented:
+- Restored Lock Sounds with a 0-100% volume slider.
+- Reworked Camera suspension controls under "Pause Steering During".
+- Aligned the Done button with the main content grid.
+- Added Target Priority modes: Balanced, Crosshair, Nearest, Lowest Health, Highest Health.
+- Saved Target Priority in client_features.json and configuration presets.
+- Fixed both entity preview screens so manual rotation resumes smoothly without snapping.
+- Locked preview head/body rotation together and removed vertical model tilt.
+
+Validation:
+- Java source syntax was checked locally.
+- A full NeoForge Gradle build was not available in this packaging environment.

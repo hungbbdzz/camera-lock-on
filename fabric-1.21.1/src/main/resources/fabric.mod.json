@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "camera_lockon",
+  "version": "${version}",
+  "name": "Camera Lock-On",
+  "description": "A lightweight, highly configurable client-side target lock-on system.",
+  "authors": [
+    "Velorise"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/camera-lock-on"
+  },
+  "license": "All Rights Reserved",
+  "icon": "logo.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.velorise.cameralockon.CameraLockOn"
+    ],
+    "modmenu": [
+      "com.velorise.cameralockon.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "camera_lockon.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "=${minecraft_version}",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
