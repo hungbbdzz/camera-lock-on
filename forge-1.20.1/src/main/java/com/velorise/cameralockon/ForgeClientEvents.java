@@ -43,7 +43,17 @@ public final class ForgeClientEvents {
                     LockOnController.TOGGLE_HUD_KEY,
                     LockOnController.CYCLE_TARGET_PRIORITY_KEY,
                     LockOnController.CYCLE_SWITCH_MODE_KEY,
-                    LockOnController.CLEAR_PIN_KEY
+                    LockOnController.CLEAR_PIN_KEY,
+                    LockOnController.CYCLE_CAMERA_POSITION_KEY,
+                    LockOnController.TOGGLE_AUTO_RELEASE_BOW_KEY,
+                    LockOnController.TOGGLE_AUTO_RECHARGE_BOW_KEY,
+                    LockOnController.CYCLE_PROJECTILE_ASSIST_KEY,
+                    LockOnController.CAMERA_X_DECREASE_KEY,
+                    LockOnController.CAMERA_X_INCREASE_KEY,
+                    LockOnController.CAMERA_Y_DECREASE_KEY,
+                    LockOnController.CAMERA_Y_INCREASE_KEY,
+                    LockOnController.CAMERA_Z_DECREASE_KEY,
+                    LockOnController.CAMERA_Z_INCREASE_KEY
             };
             for (KeyMapping mapping : mappings) {
                 event.register(mapping);
@@ -69,6 +79,24 @@ public final class ForgeClientEvents {
             // Cycle mode consumes Tab before Smart mode's generic switch handler.
             TargetCycleController.clientTick();
             LockOnController.clientTick();
+            // Steering is handled once by RenderTickEvent.START so Camera#setup sees
+            // the updated rotation in the same frame without a second smoothing step.
+            TargetOutlineController.tick();
+        }
+
+        /**
+         * Forge 1.20.1 builds the active camera before GameRenderer#renderLevel.
+         * Run steering once at render START so player yaw/pitch are available to
+         * Camera#setup in the same frame, without the double-update oscillation.
+         */
+        @SubscribeEvent
+        public static void renderTick(TickEvent.RenderTickEvent event) {
+            if (event.phase != TickEvent.Phase.START) {
+                return;
+            }
+
+            ThirdPersonCameraController.captureMouseLook();
+            LockOnController.updateCameraAngles();
         }
 
         @SubscribeEvent
@@ -84,14 +112,19 @@ public final class ForgeClientEvents {
             }
         }
 
+
+        /**
+         * Apply the already-smoothed third-person rotation at Forge's final
+         * camera-angle stage. CameraPositionMixin only computes the offset and
+         * desired visual angles, so rotation is written exactly once.
+         */
         @SubscribeEvent
-        public static void cameraAngles(ViewportEvent.ComputeCameraAngles event) {
-            LockOnController.updateCameraAngles();
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player != null && LockOnController.isActive()) {
-                event.setYaw(minecraft.player.getYRot());
-                event.setPitch(minecraft.player.getXRot());
+        public static void computeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+            if (!ThirdPersonCameraController.shouldOverrideCameraRotation()) {
+                return;
             }
+            event.setYaw(ThirdPersonCameraController.getVisualYaw());
+            event.setPitch(ThirdPersonCameraController.getVisualPitch());
         }
 
         @SubscribeEvent
@@ -101,6 +134,8 @@ public final class ForgeClientEvents {
             }
 
             PoseStack poseStack = event.getPoseStack();
+            ThirdPersonAimRayRenderer.render(poseStack, event.getCamera(), event.getPartialTick());
+            ProjectileTrajectoryRenderer.render(poseStack, event.getCamera(), event.getPartialTick());
             LockOnController.renderReticle(
                     poseStack,
                     event.getCamera(),

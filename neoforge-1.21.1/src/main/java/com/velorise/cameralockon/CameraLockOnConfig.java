@@ -19,8 +19,12 @@ public final class CameraLockOnConfig {
     public static final double DEFAULT_AIM_POINT_X = 0.0D;
     public static final double DEFAULT_AIM_POINT_Y = 0.0D;
     public static final double DEFAULT_LOST_TARGET_GRACE = 3.0D;
+    public static final LineOfSightMode DEFAULT_LINE_OF_SIGHT_MODE = LineOfSightMode.STRICT;
+    public static final boolean DEFAULT_OCCLUDED_STEERING = false;
     public static final boolean DEFAULT_LOCK_SOUNDS = true;
     public static final double DEFAULT_SOUND_VOLUME = 0.67D;
+    public static final double DEFAULT_FIRST_PERSON_AIM_STRENGTH = 1.2D;
+    public static final double DEFAULT_THIRD_PERSON_AIM_STRENGTH = 1.0D;
 
     public static final boolean DEFAULT_DEAD_ZONE = false;
     public static final double DEFAULT_DEAD_ZONE_HORIZONTAL = 7.0D;
@@ -43,6 +47,7 @@ public final class CameraLockOnConfig {
     public static final boolean DEFAULT_PREFER_BOSSES = true;
 
     public static final boolean DEFAULT_TARGET_HUD = true;
+    public static final boolean DEFAULT_TARGET_OUTLINE = false;
     public static final boolean DEFAULT_HUD_SHOW_NAME = true;
     public static final boolean DEFAULT_HUD_SHOW_HEALTH = true;
     public static final boolean DEFAULT_HUD_SHOW_DISTANCE = true;
@@ -79,9 +84,32 @@ public final class CameraLockOnConfig {
     public static final double DEFAULT_GROUP_AIM_MAX_OFFSET = 1.25D;
     public static final boolean DEFAULT_GROUP_AIM_SAME_TYPE_ONLY = false;
 
+    public static final ProjectileAssistMode DEFAULT_PROJECTILE_ASSIST_MODE = ProjectileAssistMode.OFF;
+    public static final BowAimReference DEFAULT_BOW_AIM_REFERENCE = BowAimReference.FULL_CHARGE;
+    public static final MultipartAimMode DEFAULT_MULTIPART_AIM_MODE = MultipartAimMode.OFF;
+    public static final double DEFAULT_PROJECTILE_PREDICTION_STRENGTH = 0.90D;
+    public static final double DEFAULT_PROJECTILE_EARLY_PREDICTION = 1.0D;
+    public static final double DEFAULT_PROJECTILE_MOTION_SMOOTHING = 0.65D;
+    public static final double DEFAULT_PROJECTILE_MAX_FLIGHT_TIME = 4.0D;
+    public static final boolean DEFAULT_PROJECTILE_COMPENSATE_DROP = true;
+    public static final boolean DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT = true;
+    public static final boolean DEFAULT_AUTO_RELEASE_BOW = true;
+    public static final AimRayMode DEFAULT_AIM_RAY_MODE = AimRayMode.PROJECTILE_ONLY;
+    public static final boolean DEFAULT_AUTO_RECHARGE_BOW = true;
+    public static final boolean DEFAULT_AUTO_CYCLE_CROSSBOW = false;
+    public static final boolean DEFAULT_SMART_PROJECTILE_HITBOX = true;
+    public static final boolean DEFAULT_ADAPTIVE_AIM_CALIBRATION = true;
+    public static final boolean DEFAULT_TRAJECTORY_PREVIEW = false;
+    public static final boolean DEFAULT_TRAJECTORY_FULL_CHARGE = true;
+    public static final boolean DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK = true;
+    public static final double DEFAULT_TRAJECTORY_PREVIEW_LENGTH = 64.0D;
+    public static final double DEFAULT_AUTO_RELEASE_BOW_CHARGE = 1.0D;
+    public static final double DEFAULT_AUTO_RELEASE_AIM_TOLERANCE = 2.5D;
+
     public static final ModConfigSpec CLIENT_SPEC;
 
     public static final ModConfigSpec.DoubleValue LOCK_ON_RANGE;
+    public static final ModConfigSpec.DoubleValue FIRST_PERSON_AIM_STRENGTH;
     public static final ModConfigSpec.BooleanValue SMART_LOCK;
     public static final ModConfigSpec.BooleanValue SHOW_RETICLE;
     public static final ModConfigSpec.ConfigValue<String> RETICLE_COLOR;
@@ -92,9 +120,12 @@ public final class CameraLockOnConfig {
     public static final ModConfigSpec.DoubleValue AIM_POINT_X;
     public static final ModConfigSpec.DoubleValue AIM_POINT_Y;
     public static final ModConfigSpec.DoubleValue LOST_TARGET_GRACE;
+    public static final ModConfigSpec.ConfigValue<String> LINE_OF_SIGHT_MODE;
+    public static final ModConfigSpec.BooleanValue OCCLUDED_STEERING;
     public static final ModConfigSpec.BooleanValue LOCK_SOUNDS;
     public static final ModConfigSpec.DoubleValue SOUND_VOLUME;
 
+    public static final ModConfigSpec.DoubleValue THIRD_PERSON_AIM_STRENGTH;
     public static final ModConfigSpec.BooleanValue DEAD_ZONE;
     public static final ModConfigSpec.DoubleValue DEAD_ZONE_HORIZONTAL;
     public static final ModConfigSpec.DoubleValue DEAD_ZONE_VERTICAL;
@@ -120,6 +151,7 @@ public final class CameraLockOnConfig {
     public static final ModConfigSpec.ConfigValue<List<? extends String>> PER_ENTITY_AIM_POINTS;
 
     public static final ModConfigSpec.BooleanValue TARGET_HUD;
+    public static final ModConfigSpec.BooleanValue TARGET_OUTLINE;
     public static final ModConfigSpec.BooleanValue HUD_SHOW_NAME;
     public static final ModConfigSpec.BooleanValue HUD_SHOW_HEALTH;
     public static final ModConfigSpec.BooleanValue HUD_SHOW_DISTANCE;
@@ -156,6 +188,28 @@ public final class CameraLockOnConfig {
     public static final ModConfigSpec.DoubleValue GROUP_AIM_MAX_OFFSET;
     public static final ModConfigSpec.BooleanValue GROUP_AIM_SAME_TYPE_ONLY;
 
+    public static final ModConfigSpec.ConfigValue<String> PROJECTILE_ASSIST_MODE;
+    public static final ModConfigSpec.ConfigValue<String> BOW_AIM_REFERENCE;
+    public static final ModConfigSpec.ConfigValue<String> MULTIPART_AIM_MODE;
+    public static final ModConfigSpec.DoubleValue PROJECTILE_PREDICTION_STRENGTH;
+    public static final ModConfigSpec.DoubleValue PROJECTILE_EARLY_PREDICTION;
+    public static final ModConfigSpec.DoubleValue PROJECTILE_MOTION_SMOOTHING;
+    public static final ModConfigSpec.DoubleValue PROJECTILE_MAX_FLIGHT_TIME;
+    public static final ModConfigSpec.BooleanValue PROJECTILE_COMPENSATE_DROP;
+    public static final ModConfigSpec.BooleanValue PROJECTILE_COMPENSATE_PLAYER_MOVEMENT;
+    public static final ModConfigSpec.BooleanValue AUTO_RELEASE_BOW;
+    public static final ModConfigSpec.ConfigValue<String> AIM_RAY_MODE;
+    public static final ModConfigSpec.BooleanValue AUTO_RECHARGE_BOW;
+    public static final ModConfigSpec.BooleanValue AUTO_CYCLE_CROSSBOW;
+    public static final ModConfigSpec.BooleanValue SMART_PROJECTILE_HITBOX;
+    public static final ModConfigSpec.BooleanValue ADAPTIVE_AIM_CALIBRATION;
+    public static final ModConfigSpec.BooleanValue TRAJECTORY_PREVIEW;
+    public static final ModConfigSpec.BooleanValue TRAJECTORY_FULL_CHARGE;
+    public static final ModConfigSpec.BooleanValue TRAJECTORY_SHOW_WITHOUT_LOCK;
+    public static final ModConfigSpec.DoubleValue TRAJECTORY_PREVIEW_LENGTH;
+    public static final ModConfigSpec.DoubleValue AUTO_RELEASE_BOW_CHARGE;
+    public static final ModConfigSpec.DoubleValue AUTO_RELEASE_AIM_TOLERANCE;
+
     private static final List<String> VALID_RETICLE_COLORS =
             List.of("Cyan", "Red", "Green", "Yellow", "Purple");
 
@@ -165,6 +219,8 @@ public final class CameraLockOnConfig {
         builder.comment("Core Camera Lock-On Configuration").push("general");
         LOCK_ON_RANGE = builder.comment("Maximum lock-on range in blocks.")
                 .defineInRange("lockOnRange", DEFAULT_LOCK_ON_RANGE, 5.0D, 128.0D);
+        FIRST_PERSON_AIM_STRENGTH = builder.comment("First-person lock-on pull strength. Values above 1.25 may feel less smooth near close targets.")
+                .defineInRange("firstPersonAimStrength", DEFAULT_FIRST_PERSON_AIM_STRENGTH, 0.25D, 2.0D);
         SMART_LOCK = builder.comment("Allows temporary free look before the camera returns to the target.")
                 .define("smartLock", DEFAULT_SMART_LOCK);
         SHOW_RETICLE = builder.comment("Render the 3D lock-on reticle on the current target.")
@@ -185,6 +241,10 @@ public final class CameraLockOnConfig {
                 .defineInRange("aimPointY", DEFAULT_AIM_POINT_Y, 0.0D, 1.0D);
         LOST_TARGET_GRACE = builder.comment("Seconds to remember a target while line of sight is lost.")
                 .defineInRange("lostTargetGraceSeconds", DEFAULT_LOST_TARGET_GRACE, 0.0D, 10.0D);
+        LINE_OF_SIGHT_MODE = builder.comment("STRICT hides target information when occluded; GRACE_HUD keeps HUD information during grace.")
+                .define("lineOfSightMode", DEFAULT_LINE_OF_SIGHT_MODE.name(), value -> isValidEnum(value, LineOfSightMode.class));
+        OCCLUDED_STEERING = builder.comment("Allow camera/player steering toward an occluded target while using GRACE_HUD. May be restricted on multiplayer servers.")
+                .define("occludedSteering", DEFAULT_OCCLUDED_STEERING);
         LOCK_SOUNDS = builder.comment("Play feedback sounds when targets are locked, switched, pinned, or lost.")
                 .define("lockSounds", DEFAULT_LOCK_SOUNDS);
         SOUND_VOLUME = builder.comment("Lock feedback sound volume.")
@@ -192,6 +252,8 @@ public final class CameraLockOnConfig {
         builder.pop();
 
         builder.comment("Camera Assistance and Suspension").push("camera");
+        THIRD_PERSON_AIM_STRENGTH = builder.comment("Third-person lock-on pull strength. Values above 1.25 may cause snapping or shaking near close targets.")
+                .defineInRange("thirdPersonAimStrength", DEFAULT_THIRD_PERSON_AIM_STRENGTH, 0.25D, 2.0D);
         DEAD_ZONE = builder.comment("Do not move the camera while the target remains inside an elliptical center zone.")
                 .define("deadZoneEnabled", DEFAULT_DEAD_ZONE);
         DEAD_ZONE_HORIZONTAL = builder.comment("Horizontal dead-zone radius in degrees.")
@@ -250,6 +312,8 @@ public final class CameraLockOnConfig {
         builder.comment("Target HUD").push("hud");
         TARGET_HUD = builder.comment("Show a compact HUD for the currently locked target.")
                 .define("enabled", DEFAULT_TARGET_HUD);
+        TARGET_OUTLINE = builder.comment("Draw a client-only silhouette around the locked target. Does not emit light or alter server state.")
+                .define("targetOutline", DEFAULT_TARGET_OUTLINE);
         HUD_SHOW_NAME = builder.define("showName", DEFAULT_HUD_SHOW_NAME);
         HUD_SHOW_HEALTH = builder.define("showHealth", DEFAULT_HUD_SHOW_HEALTH);
         HUD_SHOW_DISTANCE = builder.define("showDistance", DEFAULT_HUD_SHOW_DISTANCE);
@@ -319,6 +383,51 @@ public final class CameraLockOnConfig {
                 .defineInRange("maximumOffset", DEFAULT_GROUP_AIM_MAX_OFFSET, 0.1D, 3.0D);
         GROUP_AIM_SAME_TYPE_ONLY = builder.comment("Only group entities of the same type as the primary target.")
                 .define("sameTypeOnly", DEFAULT_GROUP_AIM_SAME_TYPE_ONLY);
+        builder.pop();
+
+        builder.comment("Projectile and future-position aim assistance").push("projectile_aim");
+        PROJECTILE_ASSIST_MODE = builder.comment("OFF, RETICLE, or CAMERA.")
+                .define("mode", DEFAULT_PROJECTILE_ASSIST_MODE.name(), value -> isValidEnum(value, ProjectileAssistMode.class));
+        BOW_AIM_REFERENCE = builder.comment("FULL_CHARGE, RELEASE_THRESHOLD, or CURRENT_CHARGE. Controls the bow speed used for camera ballistic aiming.")
+                .define("bowAimReference", DEFAULT_BOW_AIM_REFERENCE.name(), value -> isValidEnum(value, BowAimReference.class));
+        MULTIPART_AIM_MODE = builder.comment("OFF, DYNAMIC_VISIBLE, or STABLE_BODY. Controls special aiming for multipart targets.")
+                .define("multipartAimMode", DEFAULT_MULTIPART_AIM_MODE.name(), value -> isValidEnum(value, MultipartAimMode.class));
+        PROJECTILE_PREDICTION_STRENGTH = builder.comment("Blend between current and predicted target positions.")
+                .defineInRange("predictionStrength", DEFAULT_PROJECTILE_PREDICTION_STRENGTH, 0.0D, 1.0D);
+        PROJECTILE_EARLY_PREDICTION = builder.comment("When bow camera aim begins moving toward the stable full-charge ballistic point. 0 = from 90% draw, 0.5 = from 45% draw, 1 = from the start.")
+                .defineInRange("earlyPrediction", DEFAULT_PROJECTILE_EARLY_PREDICTION, 0.0D, 1.0D);
+        PROJECTILE_MOTION_SMOOTHING = builder.comment("Target velocity smoothing. Higher values are steadier but react more slowly.")
+                .defineInRange("motionSmoothing", DEFAULT_PROJECTILE_MOTION_SMOOTHING, 0.0D, 0.95D);
+        PROJECTILE_MAX_FLIGHT_TIME = builder.comment("Maximum simulated projectile flight time in seconds.")
+                .defineInRange("maxFlightTimeSeconds", DEFAULT_PROJECTILE_MAX_FLIGHT_TIME, 0.25D, 8.0D);
+        PROJECTILE_COMPENSATE_DROP = builder.comment("Compensate for vanilla arrow gravity.")
+                .define("compensateDrop", DEFAULT_PROJECTILE_COMPENSATE_DROP);
+        PROJECTILE_COMPENSATE_PLAYER_MOVEMENT = builder.comment("Use target velocity relative to player movement.")
+                .define("compensatePlayerMovement", DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT);
+        AUTO_RELEASE_BOW = builder.comment("Automatically release a drawn bow when charge and aim requirements are met.")
+                .define("autoReleaseBow", DEFAULT_AUTO_RELEASE_BOW);
+        AIM_RAY_MODE = builder.comment("OFF, PROJECTILE_ONLY, or ALWAYS.")
+                .define("aimRayMode", DEFAULT_AIM_RAY_MODE.name(), value -> isValidEnum(value, AimRayMode.class));
+        AUTO_RECHARGE_BOW = builder.comment("While use is held, automatically begin drawing the bow again after an automatic release.")
+                .define("autoRechargeBow", DEFAULT_AUTO_RECHARGE_BOW);
+        AUTO_CYCLE_CROSSBOW = builder.comment("While use is held, automatically charge, fire, and recharge crossbows when aim is valid.")
+                .define("autoCycleCrossbow", DEFAULT_AUTO_CYCLE_CROSSBOW);
+        SMART_PROJECTILE_HITBOX = builder.comment("Choose a clear reachable point inside the target hitbox instead of always aiming at its center.")
+                .define("smartProjectileHitbox", DEFAULT_SMART_PROJECTILE_HITBOX);
+        ADAPTIVE_AIM_CALIBRATION = builder.comment("Learn small 3D residual aim corrections by distance, height, and pitch.")
+                .define("adaptiveAimCalibration", DEFAULT_ADAPTIVE_AIM_CALIBRATION);
+        TRAJECTORY_PREVIEW = builder.comment("Render a client-side predicted projectile arc while aiming.")
+                .define("trajectoryPreview", DEFAULT_TRAJECTORY_PREVIEW);
+        TRAJECTORY_FULL_CHARGE = builder.comment("Also render a faint full-charge reference arc while drawing a bow.")
+                .define("trajectoryFullCharge", DEFAULT_TRAJECTORY_FULL_CHARGE);
+        TRAJECTORY_SHOW_WITHOUT_LOCK = builder.comment("Render the trajectory preview while no target is locked.")
+                .define("trajectoryShowWithoutLock", DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK);
+        TRAJECTORY_PREVIEW_LENGTH = builder.comment("Maximum trajectory preview length in blocks.")
+                .defineInRange("trajectoryPreviewLength", DEFAULT_TRAJECTORY_PREVIEW_LENGTH, 16.0D, 96.0D);
+        AUTO_RELEASE_BOW_CHARGE = builder.comment("Minimum normalized bow charge required for automatic release.")
+                .defineInRange("autoReleaseBowCharge", DEFAULT_AUTO_RELEASE_BOW_CHARGE, 0.25D, 1.0D);
+        AUTO_RELEASE_AIM_TOLERANCE = builder.comment("Maximum angular error in degrees before automatic release.")
+                .defineInRange("autoReleaseAimToleranceDegrees", DEFAULT_AUTO_RELEASE_AIM_TOLERANCE, 0.5D, 10.0D);
         builder.pop();
 
         CLIENT_SPEC = builder.build();
@@ -392,6 +501,90 @@ public final class CameraLockOnConfig {
     private static <E extends Enum<E>> E next(E value, Class<E> type) {
         E[] values = type.getEnumConstants();
         return values[(value.ordinal() + 1) % values.length];
+    }
+
+
+    public enum LineOfSightMode implements DisplayEnum {
+        STRICT, GRACE_HUD;
+
+        public Component getDisplayName() {
+            return Component.translatable("gui.camera_lockon.enum.line_of_sight_mode." + name().toLowerCase(Locale.ROOT));
+        }
+
+        public LineOfSightMode next() {
+            return CameraLockOnConfig.next(this, LineOfSightMode.class);
+        }
+
+        public static LineOfSightMode fromConfig(String value) {
+            return parseEnum(value, DEFAULT_LINE_OF_SIGHT_MODE, LineOfSightMode.class);
+        }
+    }
+
+    public enum AimRayMode implements DisplayEnum {
+        OFF("Off"), PROJECTILE_ONLY("Projectile Only"), ALWAYS("Always");
+        private final String displayName;
+        AimRayMode(String displayName) { this.displayName = displayName; }
+        public Component getDisplayName() { return Component.literal(displayName); }
+        public AimRayMode next() { return CameraLockOnConfig.next(this, AimRayMode.class); }
+        public static AimRayMode fromConfig(String value) { return parseEnum(value, DEFAULT_AIM_RAY_MODE, AimRayMode.class); }
+    }
+
+    public enum ProjectileAssistMode implements DisplayEnum {
+        OFF("Off"), RETICLE("Prediction Reticle"), CAMERA("Camera Assist");
+        private final String displayName;
+        ProjectileAssistMode(String displayName) { this.displayName = displayName; }
+        public Component getDisplayName() { return Component.translatable("gui.camera_lockon.enum.projectile_assist_mode." + name().toLowerCase(Locale.ROOT)); }
+        public ProjectileAssistMode next() { return CameraLockOnConfig.next(this, ProjectileAssistMode.class); }
+        public static ProjectileAssistMode fromConfig(String value) { return parseEnum(value, DEFAULT_PROJECTILE_ASSIST_MODE, ProjectileAssistMode.class); }
+    }
+
+    public enum BowAimReference implements DisplayEnum {
+        FULL_CHARGE("Full Charge"),
+        RELEASE_THRESHOLD("Release Threshold"),
+        CURRENT_CHARGE("Current Charge");
+
+        private final String displayName;
+
+        BowAimReference(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public Component getDisplayName() {
+            return Component.translatable("gui.camera_lockon.enum.bow_aim_reference." + name().toLowerCase(Locale.ROOT));
+        }
+
+        public BowAimReference next() {
+            return CameraLockOnConfig.next(this, BowAimReference.class);
+        }
+
+        public static BowAimReference fromConfig(String value) {
+            return parseEnum(value, DEFAULT_BOW_AIM_REFERENCE, BowAimReference.class);
+        }
+    }
+
+
+    public enum MultipartAimMode implements DisplayEnum {
+        OFF("Off"),
+        DYNAMIC_VISIBLE("Dynamic Visible"),
+        STABLE_BODY("Stable Body");
+
+        private final String displayName;
+
+        MultipartAimMode(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public Component getDisplayName() {
+            return Component.translatable("gui.camera_lockon.enum.multipart_aim_mode." + name().toLowerCase(Locale.ROOT));
+        }
+
+        public MultipartAimMode next() {
+            return CameraLockOnConfig.next(this, MultipartAimMode.class);
+        }
+
+        public static MultipartAimMode fromConfig(String value) {
+            return parseEnum(value, DEFAULT_MULTIPART_AIM_MODE, MultipartAimMode.class);
+        }
     }
 
     public enum AimPreset implements DisplayEnum {

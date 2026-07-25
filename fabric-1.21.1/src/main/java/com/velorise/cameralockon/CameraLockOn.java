@@ -27,6 +27,7 @@ public final class CameraLockOn implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             TargetCycleController.clientTick();
             LockOnController.clientTick();
+            TargetOutlineController.tick();
         });
 
         HudRenderCallback.EVENT.register((graphics, tickCounter) ->
@@ -36,6 +37,10 @@ public final class CameraLockOn implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             PoseStack poseStack = context.matrixStack();
             if (poseStack != null) {
+                ThirdPersonAimRayRenderer.render(poseStack, context.camera(),
+                        context.tickCounter().getGameTimeDeltaPartialTick(true));
+                ProjectileTrajectoryRenderer.render(poseStack, context.camera(),
+                        context.tickCounter().getGameTimeDeltaPartialTick(true));
                 LockOnController.renderReticle(
                         poseStack,
                         context.camera(),
@@ -65,7 +70,17 @@ public final class CameraLockOn implements ClientModInitializer {
                 LockOnController.TOGGLE_HUD_KEY,
                 LockOnController.CYCLE_TARGET_PRIORITY_KEY,
                 LockOnController.CYCLE_SWITCH_MODE_KEY,
-                LockOnController.CLEAR_PIN_KEY
+                LockOnController.CLEAR_PIN_KEY,
+                LockOnController.CYCLE_CAMERA_POSITION_KEY,
+                LockOnController.TOGGLE_AUTO_RELEASE_BOW_KEY,
+                LockOnController.TOGGLE_AUTO_RECHARGE_BOW_KEY,
+                LockOnController.CYCLE_PROJECTILE_ASSIST_KEY,
+                LockOnController.CAMERA_X_DECREASE_KEY,
+                LockOnController.CAMERA_X_INCREASE_KEY,
+                LockOnController.CAMERA_Y_DECREASE_KEY,
+                LockOnController.CAMERA_Y_INCREASE_KEY,
+                LockOnController.CAMERA_Z_DECREASE_KEY,
+                LockOnController.CAMERA_Z_INCREASE_KEY
         };
         for (KeyMapping mapping : mappings) {
             KeyBindingHelper.registerKeyBinding(mapping);

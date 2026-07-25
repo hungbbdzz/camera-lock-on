@@ -78,9 +78,9 @@ public final class TargetCycleController {
             EntityType<?> requiredType
     ) {
         double range = CameraLockOnConfig.LOCK_ON_RANGE.get();
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getViewVector(1.0F);
-        double currentAngle = horizontalAngle(player, current);
+        Vec3 eye = ThirdPersonAimResolver.targetingOrigin(player);
+        Vec3 look = ThirdPersonAimResolver.targetingDirection(player);
+        double currentAngle = horizontalAngle(eye, current);
 
         LivingEntity bestForward = null;
         LivingEntity wrapTarget = null;
@@ -108,7 +108,7 @@ public final class TargetCycleController {
                 continue;
             }
 
-            double angle = horizontalAngle(player, living);
+            double angle = horizontalAngle(eye, living);
             double clockwiseDelta = positiveDegrees(angle - currentAngle);
             if (clockwiseDelta > MINIMUM_ANGLE_STEP && clockwiseDelta < bestForwardDelta) {
                 bestForwardDelta = clockwiseDelta;
@@ -125,9 +125,9 @@ public final class TargetCycleController {
         return bestForward != null ? bestForward : wrapTarget;
     }
 
-    private static double horizontalAngle(LocalPlayer player, LivingEntity target) {
-        double deltaX = target.getBoundingBox().getCenter().x - player.getX();
-        double deltaZ = target.getBoundingBox().getCenter().z - player.getZ();
+    private static double horizontalAngle(Vec3 origin, LivingEntity target) {
+        double deltaX = target.getBoundingBox().getCenter().x - origin.x;
+        double deltaZ = target.getBoundingBox().getCenter().z - origin.z;
         return positiveDegrees(Math.toDegrees(Math.atan2(-deltaX, deltaZ)));
     }
 

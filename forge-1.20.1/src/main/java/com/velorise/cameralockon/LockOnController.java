@@ -11,6 +11,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -113,6 +114,77 @@ public final class LockOnController {
             "key.categories.camera_lockon"
     );
 
+    public static final KeyMapping CYCLE_CAMERA_POSITION_KEY = new KeyMapping(
+            "key.camera_lockon.cycle_camera_position",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+
+    public static final KeyMapping TOGGLE_AUTO_RELEASE_BOW_KEY = new KeyMapping(
+            "key.camera_lockon.toggle_auto_release_bow",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping TOGGLE_AUTO_RECHARGE_BOW_KEY = new KeyMapping(
+            "key.camera_lockon.toggle_auto_recharge_bow",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CYCLE_PROJECTILE_ASSIST_KEY = new KeyMapping(
+            "key.camera_lockon.cycle_projectile_assist",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CAMERA_X_DECREASE_KEY = new KeyMapping(
+            "key.camera_lockon.camera_x_decrease",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CAMERA_X_INCREASE_KEY = new KeyMapping(
+            "key.camera_lockon.camera_x_increase",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CAMERA_Y_DECREASE_KEY = new KeyMapping(
+            "key.camera_lockon.camera_y_decrease",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CAMERA_Y_INCREASE_KEY = new KeyMapping(
+            "key.camera_lockon.camera_y_increase",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CAMERA_Z_DECREASE_KEY = new KeyMapping(
+            "key.camera_lockon.camera_z_decrease",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
+    public static final KeyMapping CAMERA_Z_INCREASE_KEY = new KeyMapping(
+            "key.camera_lockon.camera_z_increase",
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_UNKNOWN,
+            "key.categories.camera_lockon"
+    );
+
     private static LivingEntity lockedTarget;
     private static boolean active;
     private static EntityType<?> temporaryPinnedType;
@@ -121,6 +193,10 @@ public final class LockOnController {
     private static float lastLockedPitch;
     private static boolean wasLockedLastFrame;
     private static long lastMouseInputTime;
+    private static long lastSteeringNanos;
+    /* Smoothly restores contextual player aim after manual free-look or a new target. */
+    private static double contextualReturnProgress = 1.0D;
+    private static boolean contextualReturnPending;
     private static int lostLineOfSightTicks;
 
     private static LivingEntity autoLockCandidate;
@@ -161,11 +237,14 @@ public final class LockOnController {
             return;
         }
 
+        ThirdPersonCameraController.tick();
         handleLockKey(player, level);
         handleSwitchTargetKey(player, level);
         handleTemporaryPinKey();
         handleQuickToggleKeys();
         updateCurrentTarget(player, level);
+        AutoBowReleaseController.tick(minecraft, player);
+        AdaptiveAimCalibration.tick(minecraft, player);
         updateAutoLock(player, level);
     }
 
@@ -301,11 +380,67 @@ public final class LockOnController {
             ClientFeatureStore.setSwitchTargetMode(next);
             playFeedbackSound(0.9F);
         }
+
+        while (TOGGLE_AUTO_RELEASE_BOW_KEY.consumeClick()) {
+            boolean value = !CameraLockOnConfig.AUTO_RELEASE_BOW.get();
+            CameraLockOnConfig.AUTO_RELEASE_BOW.set(value);
+            CameraLockOnConfig.CLIENT_SPEC.save();
+            showQuickSetting("message.camera_lockon.auto_release_bow", value ? "ON" : "OFF");
+            playFeedbackSound(value ? 1.2F : 0.6F);
+        }
+        while (TOGGLE_AUTO_RECHARGE_BOW_KEY.consumeClick()) {
+            boolean value = !CameraLockOnConfig.AUTO_RECHARGE_BOW.get();
+            CameraLockOnConfig.AUTO_RECHARGE_BOW.set(value);
+            CameraLockOnConfig.CLIENT_SPEC.save();
+            showQuickSetting("message.camera_lockon.auto_recharge_bow", value ? "ON" : "OFF");
+            playFeedbackSound(value ? 1.2F : 0.6F);
+        }
+        while (CYCLE_PROJECTILE_ASSIST_KEY.consumeClick()) {
+            CameraLockOnConfig.ProjectileAssistMode next = CameraLockOnConfig.ProjectileAssistMode
+                    .fromConfig(CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get()).next();
+            CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(next.name());
+            CameraLockOnConfig.CLIENT_SPEC.save();
+            showQuickSetting("message.camera_lockon.projectile_assist", next.getDisplayName().getString());
+            playFeedbackSound(0.9F);
+        }
+        adjustCameraAxis(CAMERA_X_DECREASE_KEY, -0.10D, 0.0D, 0.0D);
+        adjustCameraAxis(CAMERA_X_INCREASE_KEY, 0.10D, 0.0D, 0.0D);
+        adjustCameraAxis(CAMERA_Y_DECREASE_KEY, 0.0D, -0.10D, 0.0D);
+        adjustCameraAxis(CAMERA_Y_INCREASE_KEY, 0.0D, 0.10D, 0.0D);
+        adjustCameraAxis(CAMERA_Z_DECREASE_KEY, 0.0D, 0.0D, -0.10D);
+        adjustCameraAxis(CAMERA_Z_INCREASE_KEY, 0.0D, 0.0D, 0.10D);
+
         while (CLEAR_PIN_KEY.consumeClick()) {
             if (temporaryPinnedType != null) {
                 temporaryPinnedType = null;
                 playFeedbackSound(0.65F);
             }
+        }
+    }
+
+
+
+    private static void adjustCameraAxis(KeyMapping key, double dx, double dy, double dz) {
+        while (key.consumeClick()) {
+            ClientFeatureStore.CameraSlot slot = ClientFeatureStore.getActiveCameraSlot();
+            ClientFeatureStore.CameraPosition current = ClientFeatureStore.getCameraPosition(slot);
+            double x = Mth.clamp(current.horizontalOffset() + dx, -3.0D, 3.0D);
+            double y = Mth.clamp(current.verticalOffset() + dy, -0.5D, 1.5D);
+            double z = Mth.clamp(current.distanceOffset() + dz, -2.0D, 2.0D);
+            ClientFeatureStore.setCameraPosition(slot, new ClientFeatureStore.CameraPosition(x, y, z));
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null) {
+                minecraft.player.displayClientMessage(Component.translatable(
+                        "message.camera_lockon.camera_xyz", x, y, z), true);
+            }
+            playFeedbackSound(1.0F);
+        }
+    }
+
+    private static void showQuickSetting(String translationKey, String value) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.translatable(translationKey, value), true);
         }
     }
 
@@ -446,8 +581,8 @@ public final class LockOnController {
             return living;
         }
 
-        Vec3 start = player.getEyePosition(1.0F);
-        Vec3 direction = player.getViewVector(1.0F);
+        Vec3 start = ThirdPersonAimResolver.targetingOrigin(player);
+        Vec3 direction = ThirdPersonAimResolver.targetingDirection(player);
         Vec3 end = start.add(direction.scale(range));
 
         HitResult blockHit = level.clip(new ClipContext(
@@ -508,6 +643,7 @@ public final class LockOnController {
     public static void updateCameraAngles() {
         if (!active || lockedTarget == null) {
             wasLockedLastFrame = false;
+            lastSteeringNanos = 0L;
             return;
         }
 
@@ -516,18 +652,37 @@ public final class LockOnController {
         ClientLevel level = minecraft.level;
         if (player == null || level == null || lockedTarget.level() != level) {
             wasLockedLastFrame = false;
+            lastSteeringNanos = 0L;
             return;
         }
 
+        double steeringDt = nextSteeringDeltaSeconds();
         float currentYaw = player.getYRot();
         float currentPitch = player.getXRot();
+        boolean thirdPersonView = !minecraft.options.getCameraType().isFirstPerson();
+        double aimStrength = Mth.clamp(
+                thirdPersonView
+                        ? CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.get()
+                        : CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.get(),
+                0.25D, 2.0D);
 
-        if (!player.hasLineOfSight(lockedTarget) || shouldSuspendCamera(minecraft, player)) {
+        if (shouldSuspendCamera(minecraft, player)) {
+            rememberCurrentAngles(currentYaw, currentPitch);
+            return;
+        }
+
+        /*
+         * Lost Target Grace only preserves the lock/HUD. It must never keep
+         * steering the player or camera through solid blocks, foliage, or a
+         * corner. Steering resumes naturally when line of sight returns.
+         */
+        if (!player.hasLineOfSight(lockedTarget) && !allowsOccludedSteering()) {
             rememberCurrentAngles(currentYaw, currentPitch);
             return;
         }
 
         boolean smartLock = CameraLockOnConfig.SMART_LOCK.get();
+        boolean convergedLock = ThirdPersonCameraController.isConvergedLockActive();
         if (smartLock) {
             if (wasLockedLastFrame) {
                 float yawDifference = Math.abs(Mth.wrapDegrees(currentYaw - lastLockedYaw));
@@ -538,6 +693,10 @@ public final class LockOnController {
             }
 
             if (System.currentTimeMillis() - lastMouseInputTime < 400L) {
+                if (!convergedLock) {
+                    contextualReturnProgress = 0.0D;
+                    contextualReturnPending = true;
+                }
                 rememberCurrentAngles(currentYaw, currentPitch);
                 return;
             }
@@ -557,7 +716,10 @@ public final class LockOnController {
                 primaryAimPoint,
                 temporaryPinnedType
         );
-        Vec3 aimPoint = groupResult.aimPoint();
+        Vec3 aimPoint = ProjectileAimCalculator.resolveForCamera(player, lockedTarget, groupResult.aimPoint());
+        if (ThirdPersonCameraController.isConvergedLockActive()) {
+            aimPoint = ThirdPersonCameraController.stabilizeConvergedAimPoint(lockedTarget, aimPoint);
+        }
         lastEffectiveAimPoint = aimPoint;
         groupTargetCount = groupResult.targetCount();
 
@@ -570,6 +732,44 @@ public final class LockOnController {
         float targetPitch = (float) -Math.toDegrees(Math.atan2(deltaY, horizontalDistance));
         float yawDifference = Mth.wrapDegrees(targetYaw - currentYaw);
         float pitchDifference = targetPitch - currentPitch;
+
+        if (convergedLock) {
+            // Never snap the player/camera to a close target. A target crossing the
+            // player's origin can otherwise flip yaw by nearly 180 degrees per frame.
+            double targetDistance = player.getEyePosition().distanceTo(aimPoint);
+            if (horizontalDistance < 0.35D) {
+                targetYaw = currentYaw;
+                yawDifference = 0.0F;
+            }
+
+            double transitionSpeed = Mth.clamp(
+                    ClientFeatureStore.getCameraTransitionSpeed(), 0.05D, 1.0D);
+            double tau = (targetDistance < 4.0D ? 0.30D
+                    : targetDistance < 8.0D ? 0.20D : 0.13D)
+                    * (1.20D - transitionSpeed * 0.45D);
+            float response = (float) (1.0D - Math.exp(
+                    -steeringDt / Math.max(0.05D, tau / aimStrength)));
+            float maxStep = (float) ((targetDistance < 4.0D ? 85.0D : 165.0D)
+                    * steeringDt * aimStrength);
+            float newYaw = currentYaw + Mth.clamp(yawDifference * response, -maxStep, maxStep);
+            float newPitch = Mth.clamp(
+                    currentPitch + Mth.clamp(pitchDifference * response, -maxStep, maxStep),
+                    -89.5F,
+                    89.5F
+            );
+
+            player.setYRot(newYaw);
+            player.setXRot(newPitch);
+            player.yRotO = newYaw;
+            player.xRotO = newPitch;
+            player.yHeadRot = newYaw;
+            player.yHeadRotO = newYaw;
+            ThirdPersonCameraController.markPlayerRotationDriven(player);
+            lastLockedYaw = newYaw;
+            lastLockedPitch = newPitch;
+            wasLockedLastFrame = smartLock;
+            return;
+        }
 
         float deadZoneStrength = getDeadZoneSteeringStrength(yawDifference, pitchDifference);
         /*
@@ -584,10 +784,48 @@ public final class LockOnController {
             return;
         }
 
-        float interpolationFactor = 0.15F * steeringStrength;
-        float newYaw = currentYaw + yawDifference * interpolationFactor;
+        /*
+         * Contextual keeps the visible camera free, while lock-on steers the
+         * player's real ray. When those directions are far apart, resuming at
+         * full strength produces a visible jerk in the player model and aim ray.
+         * Ramp the correction back in, with a longer blend for large angular
+         * errors and very close targets.
+         */
+        double targetDistance = player.getEyePosition().distanceTo(aimPoint);
+        float angularError = Math.max(
+                Math.abs(yawDifference),
+                Math.abs(pitchDifference) * 0.85F
+        );
+        double errorRatio = Mth.clamp(angularError / 180.0D, 0.0D, 1.0D);
+        float contextualReturnBlend = 1.0F;
+        if (contextualReturnPending) {
+            double duration = (0.24D + errorRatio * 0.42D
+                    + (targetDistance < 4.0D ? 0.14D : 0.0D))
+                    / Math.sqrt(aimStrength);
+            contextualReturnProgress = Math.min(1.0D,
+                    contextualReturnProgress
+                            + steeringDt / Math.max(0.16D, duration));
+            contextualReturnBlend = smoothStep((float) contextualReturnProgress);
+            if (contextualReturnProgress >= 1.0D) {
+                contextualReturnPending = false;
+            }
+        }
+
+        double contextualTau = (0.11D + errorRatio * 0.10D
+                + (targetDistance < 4.0D ? 0.08D : 0.0D))
+                / Math.sqrt(aimStrength);
+        float interpolationFactor = Mth.clamp((float) (
+                (1.0D - Math.exp(-steeringDt / Math.max(0.06D, contextualTau)))
+                        * steeringStrength * contextualReturnBlend), 0.0F, 1.0F);
+        double turnRate = (targetDistance < 4.0D ? 105.0D : 175.0D)
+                * Math.sqrt(aimStrength);
+        float maxStep = (float) (turnRate * steeringDt
+                * Math.max(0.20F, contextualReturnBlend));
+        float newYaw = currentYaw + Mth.clamp(
+                yawDifference * interpolationFactor, -maxStep, maxStep);
         float newPitch = Mth.clamp(
-                currentPitch + pitchDifference * interpolationFactor,
+                currentPitch + Mth.clamp(
+                        pitchDifference * interpolationFactor, -maxStep, maxStep),
                 -90.0F,
                 90.0F
         );
@@ -596,6 +834,9 @@ public final class LockOnController {
         player.setXRot(newPitch);
         player.yRotO = newYaw;
         player.xRotO = newPitch;
+        player.yHeadRot = newYaw;
+        player.yHeadRotO = newYaw;
+        ThirdPersonCameraController.markPlayerRotationDriven(player);
 
         if (smartLock) {
             lastLockedYaw = newYaw;
@@ -607,7 +848,8 @@ public final class LockOnController {
     }
 
     private static boolean shouldSuspendCamera(Minecraft minecraft, LocalPlayer player) {
-        if (CameraLockOnConfig.SUSPEND_USING_ITEM.get() && player.isUsingItem()) {
+        if (CameraLockOnConfig.SUSPEND_USING_ITEM.get() && player.isUsingItem()
+                && !ProjectileAimCalculator.isCameraAssistActive(player)) {
             return true;
         }
         if (CameraLockOnConfig.SUSPEND_RIDING.get() && player.isPassenger()) {
@@ -676,6 +918,21 @@ public final class LockOnController {
         return Mth.clamp(deadZoneSteeringBlend, 0.0F, 1.0F);
     }
 
+    private static float smoothStep(float value) {
+        float clamped = Mth.clamp(value, 0.0F, 1.0F);
+        return clamped * clamped * (3.0F - 2.0F * clamped);
+    }
+
+    private static double nextSteeringDeltaSeconds() {
+        long now = System.nanoTime();
+        double dt = lastSteeringNanos == 0L
+                ? 1.0D / 60.0D
+                : Math.min(0.10D, Math.max(0.0D,
+                (now - lastSteeringNanos) / 1_000_000_000.0D));
+        lastSteeringNanos = now;
+        return Math.max(1.0D / 1000.0D, dt);
+    }
+
     private static void rememberCurrentAngles(float yaw, float pitch) {
         lastLockedYaw = yaw;
         lastLockedPitch = pitch;
@@ -684,6 +941,7 @@ public final class LockOnController {
 
     public static void renderReticle(PoseStack poseStack, Camera camera, float partialTick) {
         if (!CameraLockOnConfig.SHOW_RETICLE.get()
+                || !canRenderLockedTargetInfo()
                 || !active
                 || lockedTarget == null
                 || lockedTarget.isRemoved()) {
@@ -715,8 +973,19 @@ public final class LockOnController {
                 primaryAimPoint,
                 temporaryPinnedType
         );
-        Vec3 aimPoint = groupResult.aimPoint();
-        lastEffectiveAimPoint = aimPoint;
+        Vec3 resolvedReticlePoint = ProjectileAimCalculator.resolveForReticle(
+                player, lockedTarget, groupResult.aimPoint());
+        Vec3 aimPoint;
+        if (ThirdPersonCameraController.isConvergedLockActive()
+                && lastEffectiveAimPoint != null
+                && lastEffectiveAimPoint.lengthSqr() > 1.0E-8D) {
+            // Render from the same stabilized point used by player/camera steering.
+            // The renderer must not overwrite it with a second unsmoothed solution.
+            aimPoint = lastEffectiveAimPoint;
+        } else {
+            aimPoint = resolvedReticlePoint;
+            lastEffectiveAimPoint = aimPoint;
+        }
         groupTargetCount = groupResult.targetCount();
 
         Vec3 relative = aimPoint.subtract(camera.getPosition());
@@ -756,8 +1025,8 @@ public final class LockOnController {
             LivingEntity excludedTarget,
             EntityType<?> requiredType
     ) {
-        Vec3 eye = player.getEyePosition();
-        Vec3 look = player.getViewVector(1.0F);
+        Vec3 eye = ThirdPersonAimResolver.targetingOrigin(player);
+        Vec3 look = ThirdPersonAimResolver.targetingDirection(player);
         double maximumRange = CameraLockOnConfig.LOCK_ON_RANGE.get();
 
         LivingEntity bestGeneral = null;
@@ -930,6 +1199,9 @@ public final class LockOnController {
         active = true;
         wasLockedLastFrame = false;
         lastMouseInputTime = 0L;
+        lastSteeringNanos = 0L;
+        contextualReturnProgress = 0.0D;
+        contextualReturnPending = true;
         lostLineOfSightTicks = 0;
         groupTargetCount = 1;
         resetAutoLockCandidate();
@@ -945,6 +1217,8 @@ public final class LockOnController {
         lockedTarget = null;
         active = false;
         wasLockedLastFrame = false;
+        contextualReturnProgress = 1.0D;
+        contextualReturnPending = false;
         lostLineOfSightTicks = 0;
         groupTargetCount = 1;
         lastEffectiveAimPoint = Vec3.ZERO;
@@ -990,6 +1264,9 @@ public final class LockOnController {
         temporaryPinnedType = null;
         wasLockedLastFrame = false;
         lastMouseInputTime = 0L;
+        lastSteeringNanos = 0L;
+        contextualReturnProgress = 1.0D;
+        contextualReturnPending = false;
         lostLineOfSightTicks = 0;
         resetAutoLockCandidate();
         autoLockBlockedUntil = 0L;
@@ -1004,8 +1281,44 @@ public final class LockOnController {
         return active && lockedTarget != null;
     }
 
+    /** True during the short manual-camera override provided by Temporary Free Look. */
+    public static boolean isTemporaryFreeLookActive() {
+        return isActive()
+                && CameraLockOnConfig.SMART_LOCK.get()
+                && lastMouseInputTime > 0L
+                && System.currentTimeMillis() - lastMouseInputTime < 400L;
+    }
+
     public static LivingEntity getLockedTarget() {
         return lockedTarget;
+    }
+
+    public static boolean canRenderLockedTargetInfo() {
+        if (!isActive()) return false;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player == null) return false;
+        if (player.hasLineOfSight(lockedTarget)) return true;
+        return CameraLockOnConfig.LineOfSightMode.fromConfig(CameraLockOnConfig.LINE_OF_SIGHT_MODE.get())
+                == CameraLockOnConfig.LineOfSightMode.GRACE_HUD;
+    }
+
+    private static boolean allowsOccludedSteering() {
+        return CameraLockOnConfig.LineOfSightMode.fromConfig(CameraLockOnConfig.LINE_OF_SIGHT_MODE.get())
+                == CameraLockOnConfig.LineOfSightMode.GRACE_HUD
+                && CameraLockOnConfig.OCCLUDED_STEERING.get();
+    }
+
+    /** True only while the current target can legally drive player/camera aim. */
+    public static boolean canSteerToLockedTarget() {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        return active
+                && lockedTarget != null
+                && player != null
+                && lockedTarget.isAlive()
+                && !lockedTarget.isRemoved()
+                && (player.hasLineOfSight(lockedTarget) || allowsOccludedSteering());
     }
 
     public static LivingEntity getAutoLockCandidate() {

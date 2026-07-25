@@ -14,13 +14,17 @@ import java.util.stream.Collectors;
 
 /** Lists, previews, loads, updates and deletes shareable preset files. */
 public final class PresetManagerScreen extends Screen {
-    private static final int PANEL_WIDTH = 380;
-    private static final int PANEL_HEIGHT = 278;
+    private static final int MAX_PANEL_WIDTH = 380;
+    private static final int MAX_PANEL_HEIGHT = 278;
     private static final int LIST_LEFT_OFFSET = 16;
     private static final int LIST_TOP_OFFSET = 63;
     private static final int LIST_WIDTH = 170;
     private static final int ROW_HEIGHT = 20;
-    private static final int VISIBLE_ROWS = 7;
+    private int panelWidth() { return Math.max(300, Math.min(MAX_PANEL_WIDTH, this.width - 12)); }
+    private int panelHeight() { return Math.max(226, Math.min(MAX_PANEL_HEIGHT, this.height - 12)); }
+    private int panelLeft() { return (this.width - panelWidth()) / 2; }
+    private int panelTop() { return Math.max(6, (this.height - panelHeight()) / 2); }
+    private int visibleRows() { return Math.max(4, Math.min(7, (panelHeight() - 126) / ROW_HEIGHT)); }
 
     private final Screen parent;
     private final List<PresetStore.PresetSummary> presets = new ArrayList<>();
@@ -38,27 +42,29 @@ public final class PresetManagerScreen extends Screen {
     @Override
     protected void init() {
         reloadPresets();
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
+        int panelW = panelWidth();
+        int panelH = panelHeight();
+        int left = panelLeft();
+        int top = panelTop();
 
         this.addRenderableWidget(Button.builder(Component.literal("Save Current..."), button -> openEditor(null))
-                .bounds(left + 16, top + PANEL_HEIGHT - 27, 104, 18)
+                .bounds(left + 16, top + panelH - 25, 104, 18)
                 .build());
 
         this.loadButton = Button.builder(Component.literal("Load"), button -> confirmLoad())
-                .bounds(left + 204, top + 174, 72, 18)
+                .bounds(left + Math.max(184, panelW - 176), top + panelH - 75, 72, 18)
                 .build();
         this.loadButton.setTooltip(Tooltip.create(Component.literal("Replace only the setting groups included by the selected preset.")));
         this.addRenderableWidget(this.loadButton);
 
         this.updateButton = Button.builder(Component.literal("Update..."), button -> openEditor(selected()))
-                .bounds(left + 282, top + 174, 82, 18)
+                .bounds(left + panelW - 98, top + panelH - 75, 82, 18)
                 .build();
         this.updateButton.setTooltip(Tooltip.create(Component.literal("Copy the current configuration into this preset. Active settings are not changed.")));
         this.addRenderableWidget(this.updateButton);
 
         this.deleteButton = Button.builder(Component.literal("Delete"), button -> confirmDelete())
-                .bounds(left + 204, top + 198, 72, 18)
+                .bounds(left + Math.max(184, panelW - 176), top + panelH - 51, 72, 18)
                 .build();
         this.addRenderableWidget(this.deleteButton);
 
@@ -66,11 +72,11 @@ public final class PresetManagerScreen extends Screen {
                     reloadPresets();
                     rebuildWidgets();
                 })
-                .bounds(left + 282, top + 198, 82, 18)
+                .bounds(left + panelW - 98, top + panelH - 51, 82, 18)
                 .build());
 
         this.addRenderableWidget(Button.builder(Component.literal("Done"), button -> returnToParent())
-                .bounds(left + PANEL_WIDTH - 92, top + PANEL_HEIGHT - 27, 76, 18)
+                .bounds(left + panelW - 92, top + panelH - 25, 76, 18)
                 .build());
         updateActionButtons();
     }
@@ -88,7 +94,7 @@ public final class PresetManagerScreen extends Screen {
                 }
             }
         }
-        this.scrollOffset = Mth.clamp(this.scrollOffset, 0, Math.max(0, this.presets.size() - VISIBLE_ROWS));
+        this.scrollOffset = Mth.clamp(this.scrollOffset, 0, Math.max(0, this.presets.size() - visibleRows()));
     }
 
     private PresetStore.PresetSummary selected() {
@@ -157,11 +163,11 @@ public final class PresetManagerScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int left = (this.width - PANEL_WIDTH) / 2 + LIST_LEFT_OFFSET;
-        int top = (this.height - PANEL_HEIGHT) / 2 + LIST_TOP_OFFSET;
+        int left = panelLeft() + LIST_LEFT_OFFSET;
+        int top = panelTop() + LIST_TOP_OFFSET;
         if (button == 0
                 && mouseX >= left && mouseX < left + LIST_WIDTH
-                && mouseY >= top && mouseY < top + ROW_HEIGHT * VISIBLE_ROWS) {
+                && mouseY >= top && mouseY < top + ROW_HEIGHT * visibleRows()) {
             int row = (int) ((mouseY - top) / ROW_HEIGHT);
             int index = this.scrollOffset + row;
             if (index >= 0 && index < this.presets.size()) {
@@ -175,15 +181,15 @@ public final class PresetManagerScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollDelta) {
-        int left = (this.width - PANEL_WIDTH) / 2 + LIST_LEFT_OFFSET;
-        int top = (this.height - PANEL_HEIGHT) / 2 + LIST_TOP_OFFSET;
+        int left = panelLeft() + LIST_LEFT_OFFSET;
+        int top = panelTop() + LIST_TOP_OFFSET;
         if (mouseX >= left && mouseX < left + LIST_WIDTH
-                && mouseY >= top && mouseY < top + ROW_HEIGHT * VISIBLE_ROWS
+                && mouseY >= top && mouseY < top + ROW_HEIGHT * visibleRows()
                 && scrollDelta != 0.0D) {
             this.scrollOffset = Mth.clamp(
                     this.scrollOffset - (int) Math.signum(scrollDelta),
                     0,
-                    Math.max(0, this.presets.size() - VISIBLE_ROWS)
+                    Math.max(0, this.presets.size() - visibleRows())
             );
             return true;
         }
@@ -193,9 +199,11 @@ public final class PresetManagerScreen extends Screen {
     @Override
     public void renderBackground(GuiGraphics graphics) {
         super.renderBackground(graphics);
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
-        AimPointConfigScreen.drawPanel(graphics, left, top, PANEL_WIDTH, PANEL_HEIGHT);
+        int panelW = panelWidth();
+        int panelH = panelHeight();
+        int left = panelLeft();
+        int top = panelTop();
+        AimPointConfigScreen.drawPanel(graphics, left, top, panelW, panelH);
     }
 
     @Override
@@ -204,8 +212,10 @@ public final class PresetManagerScreen extends Screen {
         graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
         super.render(graphics, mouseX, mouseY, partialTick);
 
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
+        int panelW = panelWidth();
+        int panelH = panelHeight();
+        int left = panelLeft();
+        int top = panelTop();
         int listLeft = left + LIST_LEFT_OFFSET;
         int listTop = top + LIST_TOP_OFFSET;
 
@@ -219,12 +229,12 @@ public final class PresetManagerScreen extends Screen {
         graphics.drawString(this.font, "Saved presets", listLeft, top + 52, 0xFFD9E2F0, false);
 
         graphics.fill(listLeft - 3, listTop - 3, listLeft + LIST_WIDTH + 3,
-                listTop + ROW_HEIGHT * VISIBLE_ROWS + 3, 0x66070A10);
+                listTop + ROW_HEIGHT * visibleRows() + 3, 0x66070A10);
 
         if (this.presets.isEmpty()) {
             graphics.drawCenteredString(this.font, "No presets yet", listLeft + LIST_WIDTH / 2, listTop + 57, 0xFF8994A6);
         } else {
-            int end = Math.min(this.presets.size(), this.scrollOffset + VISIBLE_ROWS);
+            int end = Math.min(this.presets.size(), this.scrollOffset + visibleRows());
             for (int index = this.scrollOffset; index < end; index++) {
                 int row = index - this.scrollOffset;
                 int y = listTop + row * ROW_HEIGHT;
@@ -240,7 +250,7 @@ public final class PresetManagerScreen extends Screen {
         }
 
         PresetStore.PresetSummary summary = selected();
-        int detailX = left + 204;
+        int detailX = left + Math.max(184, panelW - 176);
         graphics.drawString(this.font, "Selected preset", detailX, top + 63, 0xFFD9E2F0, false);
         if (summary == null) {
             graphics.drawString(this.font, "Select a preset from the list.", detailX, top + 82, 0xFF8994A6, false);

@@ -42,8 +42,12 @@ public final class CameraLockOnConfig {
     public static final double DEFAULT_AIM_POINT_X = 0.0D;
     public static final double DEFAULT_AIM_POINT_Y = 0.0D;
     public static final double DEFAULT_LOST_TARGET_GRACE = 3.0D;
+    public static final LineOfSightMode DEFAULT_LINE_OF_SIGHT_MODE = LineOfSightMode.STRICT;
+    public static final boolean DEFAULT_OCCLUDED_STEERING = false;
     public static final boolean DEFAULT_LOCK_SOUNDS = true;
     public static final double DEFAULT_SOUND_VOLUME = 0.67D;
+    public static final double DEFAULT_FIRST_PERSON_AIM_STRENGTH = 1.2D;
+    public static final double DEFAULT_THIRD_PERSON_AIM_STRENGTH = 1.0D;
 
     public static final boolean DEFAULT_DEAD_ZONE = false;
     public static final double DEFAULT_DEAD_ZONE_HORIZONTAL = 7.0D;
@@ -66,6 +70,7 @@ public final class CameraLockOnConfig {
     public static final boolean DEFAULT_PREFER_BOSSES = true;
 
     public static final boolean DEFAULT_TARGET_HUD = true;
+    public static final boolean DEFAULT_TARGET_OUTLINE = false;
     public static final boolean DEFAULT_HUD_SHOW_NAME = true;
     public static final boolean DEFAULT_HUD_SHOW_HEALTH = true;
     public static final boolean DEFAULT_HUD_SHOW_DISTANCE = true;
@@ -102,6 +107,28 @@ public final class CameraLockOnConfig {
     public static final double DEFAULT_GROUP_AIM_MAX_OFFSET = 1.25D;
     public static final boolean DEFAULT_GROUP_AIM_SAME_TYPE_ONLY = false;
 
+    public static final ProjectileAssistMode DEFAULT_PROJECTILE_ASSIST_MODE = ProjectileAssistMode.OFF;
+    public static final BowAimReference DEFAULT_BOW_AIM_REFERENCE = BowAimReference.FULL_CHARGE;
+    public static final MultipartAimMode DEFAULT_MULTIPART_AIM_MODE = MultipartAimMode.OFF;
+    public static final double DEFAULT_PROJECTILE_PREDICTION_STRENGTH = 0.90D;
+    public static final double DEFAULT_PROJECTILE_EARLY_PREDICTION = 1.0D;
+    public static final double DEFAULT_PROJECTILE_MOTION_SMOOTHING = 0.65D;
+    public static final double DEFAULT_PROJECTILE_MAX_FLIGHT_TIME = 4.0D;
+    public static final boolean DEFAULT_PROJECTILE_COMPENSATE_DROP = true;
+    public static final boolean DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT = true;
+    public static final boolean DEFAULT_AUTO_RELEASE_BOW = true;
+    public static final AimRayMode DEFAULT_AIM_RAY_MODE = AimRayMode.PROJECTILE_ONLY;
+    public static final boolean DEFAULT_AUTO_RECHARGE_BOW = true;
+    public static final boolean DEFAULT_AUTO_CYCLE_CROSSBOW = false;
+    public static final boolean DEFAULT_SMART_PROJECTILE_HITBOX = true;
+    public static final boolean DEFAULT_ADAPTIVE_AIM_CALIBRATION = true;
+    public static final boolean DEFAULT_TRAJECTORY_PREVIEW = false;
+    public static final boolean DEFAULT_TRAJECTORY_FULL_CHARGE = true;
+    public static final boolean DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK = true;
+    public static final double DEFAULT_TRAJECTORY_PREVIEW_LENGTH = 64.0D;
+    public static final double DEFAULT_AUTO_RELEASE_BOW_CHARGE = 1.0D;
+    public static final double DEFAULT_AUTO_RELEASE_AIM_TOLERANCE = 2.5D;
+
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Map<String, ConfigValue<?>> VALUES = new LinkedHashMap<>();
     private static final List<String> VALID_RETICLE_COLORS =
@@ -110,6 +137,7 @@ public final class CameraLockOnConfig {
     public static final ClientSpec CLIENT_SPEC = new ClientSpec();
 
     public static final DoubleValue LOCK_ON_RANGE = doubleValue("general.lockOnRange", DEFAULT_LOCK_ON_RANGE, 5.0D, 128.0D);
+    public static final DoubleValue FIRST_PERSON_AIM_STRENGTH = doubleValue("general.firstPersonAimStrength", DEFAULT_FIRST_PERSON_AIM_STRENGTH, 0.25D, 2.0D);
     public static final BooleanValue SMART_LOCK = booleanValue("general.smartLock", DEFAULT_SMART_LOCK);
     public static final BooleanValue SHOW_RETICLE = booleanValue("general.showReticle", DEFAULT_SHOW_RETICLE);
     public static final ConfigValue<String> RETICLE_COLOR = stringValue("general.reticleColor", DEFAULT_RETICLE_COLOR, CameraLockOnConfig::isValidReticleColor);
@@ -120,9 +148,12 @@ public final class CameraLockOnConfig {
     public static final DoubleValue AIM_POINT_X = doubleValue("general.aimPointX", DEFAULT_AIM_POINT_X, -1.0D, 1.0D);
     public static final DoubleValue AIM_POINT_Y = doubleValue("general.aimPointY", DEFAULT_AIM_POINT_Y, 0.0D, 1.0D);
     public static final DoubleValue LOST_TARGET_GRACE = doubleValue("general.lostTargetGraceSeconds", DEFAULT_LOST_TARGET_GRACE, 0.0D, 10.0D);
+    public static final ConfigValue<String> LINE_OF_SIGHT_MODE = stringValue("general.lineOfSightMode", DEFAULT_LINE_OF_SIGHT_MODE.name(), value -> isValidEnum(value, LineOfSightMode.class));
+    public static final BooleanValue OCCLUDED_STEERING = booleanValue("general.occludedSteering", DEFAULT_OCCLUDED_STEERING);
     public static final BooleanValue LOCK_SOUNDS = booleanValue("general.lockSounds", DEFAULT_LOCK_SOUNDS);
     public static final DoubleValue SOUND_VOLUME = doubleValue("general.soundVolume", DEFAULT_SOUND_VOLUME, 0.0D, 1.0D);
 
+    public static final DoubleValue THIRD_PERSON_AIM_STRENGTH = doubleValue("camera.thirdPersonAimStrength", DEFAULT_THIRD_PERSON_AIM_STRENGTH, 0.25D, 2.0D);
     public static final BooleanValue DEAD_ZONE = booleanValue("camera.deadZoneEnabled", DEFAULT_DEAD_ZONE);
     public static final DoubleValue DEAD_ZONE_HORIZONTAL = doubleValue("camera.deadZoneHorizontalDegrees", DEFAULT_DEAD_ZONE_HORIZONTAL, 0.0D, 30.0D);
     public static final DoubleValue DEAD_ZONE_VERTICAL = doubleValue("camera.deadZoneVerticalDegrees", DEFAULT_DEAD_ZONE_VERTICAL, 0.0D, 20.0D);
@@ -148,6 +179,7 @@ public final class CameraLockOnConfig {
     public static final ConfigValue<List<? extends String>> PER_ENTITY_AIM_POINTS = listValue("entity_filter.perEntityAimPoints", List.of(), CameraLockOnConfig::isValidAimPointEntry);
 
     public static final BooleanValue TARGET_HUD = booleanValue("hud.enabled", DEFAULT_TARGET_HUD);
+    public static final BooleanValue TARGET_OUTLINE = booleanValue("hud.targetOutline", DEFAULT_TARGET_OUTLINE);
     public static final BooleanValue HUD_SHOW_NAME = booleanValue("hud.showName", DEFAULT_HUD_SHOW_NAME);
     public static final BooleanValue HUD_SHOW_HEALTH = booleanValue("hud.showHealth", DEFAULT_HUD_SHOW_HEALTH);
     public static final BooleanValue HUD_SHOW_DISTANCE = booleanValue("hud.showDistance", DEFAULT_HUD_SHOW_DISTANCE);
@@ -183,6 +215,28 @@ public final class CameraLockOnConfig {
     public static final DoubleValue GROUP_AIM_STRENGTH = doubleValue("group_aim.strength", DEFAULT_GROUP_AIM_STRENGTH, 0.0D, 1.0D);
     public static final DoubleValue GROUP_AIM_MAX_OFFSET = doubleValue("group_aim.maximumOffset", DEFAULT_GROUP_AIM_MAX_OFFSET, 0.1D, 3.0D);
     public static final BooleanValue GROUP_AIM_SAME_TYPE_ONLY = booleanValue("group_aim.sameTypeOnly", DEFAULT_GROUP_AIM_SAME_TYPE_ONLY);
+
+    public static final ConfigValue<String> PROJECTILE_ASSIST_MODE = stringValue("projectile_aim.mode", DEFAULT_PROJECTILE_ASSIST_MODE.name(), value -> isValidEnum(value, ProjectileAssistMode.class));
+    public static final ConfigValue<String> BOW_AIM_REFERENCE = stringValue("projectile_aim.bowAimReference", DEFAULT_BOW_AIM_REFERENCE.name(), value -> isValidEnum(value, BowAimReference.class));
+    public static final ConfigValue<String> MULTIPART_AIM_MODE = stringValue("projectile_aim.multipartAimMode", DEFAULT_MULTIPART_AIM_MODE.name(), value -> isValidEnum(value, MultipartAimMode.class));
+    public static final DoubleValue PROJECTILE_PREDICTION_STRENGTH = doubleValue("projectile_aim.predictionStrength", DEFAULT_PROJECTILE_PREDICTION_STRENGTH, 0.0D, 1.0D);
+    public static final DoubleValue PROJECTILE_EARLY_PREDICTION = doubleValue("projectile_aim.earlyPrediction", DEFAULT_PROJECTILE_EARLY_PREDICTION, 0.0D, 1.0D);
+    public static final DoubleValue PROJECTILE_MOTION_SMOOTHING = doubleValue("projectile_aim.motionSmoothing", DEFAULT_PROJECTILE_MOTION_SMOOTHING, 0.0D, 0.95D);
+    public static final DoubleValue PROJECTILE_MAX_FLIGHT_TIME = doubleValue("projectile_aim.maxFlightTimeSeconds", DEFAULT_PROJECTILE_MAX_FLIGHT_TIME, 0.25D, 8.0D);
+    public static final BooleanValue PROJECTILE_COMPENSATE_DROP = booleanValue("projectile_aim.compensateDrop", DEFAULT_PROJECTILE_COMPENSATE_DROP);
+    public static final BooleanValue PROJECTILE_COMPENSATE_PLAYER_MOVEMENT = booleanValue("projectile_aim.compensatePlayerMovement", DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT);
+    public static final BooleanValue AUTO_RELEASE_BOW = booleanValue("projectile_aim.autoReleaseBow", DEFAULT_AUTO_RELEASE_BOW);
+    public static final ConfigValue<String> AIM_RAY_MODE = stringValue("projectile_aim.aimRayMode", DEFAULT_AIM_RAY_MODE.name(), value -> isValidEnum(value, AimRayMode.class));
+    public static final BooleanValue AUTO_RECHARGE_BOW = booleanValue("projectile_aim.autoRechargeBow", DEFAULT_AUTO_RECHARGE_BOW);
+    public static final BooleanValue AUTO_CYCLE_CROSSBOW = booleanValue("projectile_aim.autoCycleCrossbow", DEFAULT_AUTO_CYCLE_CROSSBOW);
+    public static final BooleanValue SMART_PROJECTILE_HITBOX = booleanValue("projectile_aim.smartProjectileHitbox", DEFAULT_SMART_PROJECTILE_HITBOX);
+    public static final BooleanValue ADAPTIVE_AIM_CALIBRATION = booleanValue("projectile_aim.adaptiveAimCalibration", DEFAULT_ADAPTIVE_AIM_CALIBRATION);
+    public static final BooleanValue TRAJECTORY_PREVIEW = booleanValue("projectile_aim.trajectoryPreview", DEFAULT_TRAJECTORY_PREVIEW);
+    public static final BooleanValue TRAJECTORY_FULL_CHARGE = booleanValue("projectile_aim.trajectoryFullCharge", DEFAULT_TRAJECTORY_FULL_CHARGE);
+    public static final BooleanValue TRAJECTORY_SHOW_WITHOUT_LOCK = booleanValue("projectile_aim.trajectoryShowWithoutLock", DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK);
+    public static final DoubleValue TRAJECTORY_PREVIEW_LENGTH = doubleValue("projectile_aim.trajectoryPreviewLength", DEFAULT_TRAJECTORY_PREVIEW_LENGTH, 16.0D, 96.0D);
+    public static final DoubleValue AUTO_RELEASE_BOW_CHARGE = doubleValue("projectile_aim.autoReleaseBowCharge", DEFAULT_AUTO_RELEASE_BOW_CHARGE, 0.25D, 1.0D);
+    public static final DoubleValue AUTO_RELEASE_AIM_TOLERANCE = doubleValue("projectile_aim.autoReleaseAimToleranceDegrees", DEFAULT_AUTO_RELEASE_AIM_TOLERANCE, 0.5D, 10.0D);
 
     private CameraLockOnConfig() {
     }
@@ -479,6 +533,90 @@ public final class CameraLockOnConfig {
     private static <E extends Enum<E>> E next(E value, Class<E> type) {
         E[] values = type.getEnumConstants();
         return values[(value.ordinal() + 1) % values.length];
+    }
+
+
+    public enum LineOfSightMode implements DisplayEnum {
+        STRICT, GRACE_HUD;
+
+        public Component getDisplayName() {
+            return Component.translatable("gui.camera_lockon.enum.line_of_sight_mode." + name().toLowerCase(Locale.ROOT));
+        }
+
+        public LineOfSightMode next() {
+            return CameraLockOnConfig.next(this, LineOfSightMode.class);
+        }
+
+        public static LineOfSightMode fromConfig(String value) {
+            return parseEnum(value, DEFAULT_LINE_OF_SIGHT_MODE, LineOfSightMode.class);
+        }
+    }
+
+    public enum AimRayMode implements DisplayEnum {
+        OFF("Off"), PROJECTILE_ONLY("Projectile Only"), ALWAYS("Always");
+        private final String displayName;
+        AimRayMode(String displayName) { this.displayName = displayName; }
+        public Component getDisplayName() { return Component.literal(displayName); }
+        public AimRayMode next() { return CameraLockOnConfig.next(this, AimRayMode.class); }
+        public static AimRayMode fromConfig(String value) { return parseEnum(value, DEFAULT_AIM_RAY_MODE, AimRayMode.class); }
+    }
+
+    public enum ProjectileAssistMode implements DisplayEnum {
+        OFF("Off"), RETICLE("Prediction Reticle"), CAMERA("Camera Assist");
+        private final String displayName;
+        ProjectileAssistMode(String displayName) { this.displayName = displayName; }
+        public Component getDisplayName() { return Component.translatable("gui.camera_lockon.enum.projectile_assist_mode." + name().toLowerCase(Locale.ROOT)); }
+        public ProjectileAssistMode next() { return CameraLockOnConfig.next(this, ProjectileAssistMode.class); }
+        public static ProjectileAssistMode fromConfig(String value) { return parseEnum(value, DEFAULT_PROJECTILE_ASSIST_MODE, ProjectileAssistMode.class); }
+    }
+
+    public enum BowAimReference implements DisplayEnum {
+        FULL_CHARGE("Full Charge"),
+        RELEASE_THRESHOLD("Release Threshold"),
+        CURRENT_CHARGE("Current Charge");
+
+        private final String displayName;
+
+        BowAimReference(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public Component getDisplayName() {
+            return Component.translatable("gui.camera_lockon.enum.bow_aim_reference." + name().toLowerCase(Locale.ROOT));
+        }
+
+        public BowAimReference next() {
+            return CameraLockOnConfig.next(this, BowAimReference.class);
+        }
+
+        public static BowAimReference fromConfig(String value) {
+            return parseEnum(value, DEFAULT_BOW_AIM_REFERENCE, BowAimReference.class);
+        }
+    }
+
+
+    public enum MultipartAimMode implements DisplayEnum {
+        OFF("Off"),
+        DYNAMIC_VISIBLE("Dynamic Visible"),
+        STABLE_BODY("Stable Body");
+
+        private final String displayName;
+
+        MultipartAimMode(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public Component getDisplayName() {
+            return Component.translatable("gui.camera_lockon.enum.multipart_aim_mode." + name().toLowerCase(Locale.ROOT));
+        }
+
+        public MultipartAimMode next() {
+            return CameraLockOnConfig.next(this, MultipartAimMode.class);
+        }
+
+        public static MultipartAimMode fromConfig(String value) {
+            return parseEnum(value, DEFAULT_MULTIPART_AIM_MODE, MultipartAimMode.class);
+        }
     }
 
     public enum AimPreset implements DisplayEnum {

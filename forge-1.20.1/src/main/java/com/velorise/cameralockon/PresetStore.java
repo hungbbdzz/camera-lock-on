@@ -128,6 +128,7 @@ public final class PresetStore {
                 CameraLockOnConfig.AUTO_RETARGET.set(bool(s, "autoRetarget", CameraLockOnConfig.AUTO_RETARGET.get()));
                 CameraLockOnConfig.HOSTILE_ONLY.set(bool(s, "hostileOnly", CameraLockOnConfig.HOSTILE_ONLY.get()));
                 CameraLockOnConfig.LOCK_ON_RANGE.set(clamp(number(s, "lockOnRange", CameraLockOnConfig.LOCK_ON_RANGE.get()), 5, 128));
+                CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.set(clamp(number(s, "firstPersonAimStrength", CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.get()), 0.25, 2.0));
                 CameraLockOnConfig.AIM_PRESET.set(CameraLockOnConfig.AimPreset.fromConfig(text(s, "aimPreset", CameraLockOnConfig.AIM_PRESET.get())).name());
                 CameraLockOnConfig.AIM_POINT_X.set(clamp(number(s, "aimPointX", CameraLockOnConfig.AIM_POINT_X.get()), -1, 1));
                 CameraLockOnConfig.AIM_POINT_Y.set(clamp(number(s, "aimPointY", CameraLockOnConfig.AIM_POINT_Y.get()), 0, 1));
@@ -152,6 +153,17 @@ public final class PresetStore {
                 CameraLockOnConfig.SUSPEND_RIDING.set(bool(s, "suspendRiding", CameraLockOnConfig.SUSPEND_RIDING.get()));
                 CameraLockOnConfig.SUSPEND_ELYTRA.set(bool(s, "suspendElytra", CameraLockOnConfig.SUSPEND_ELYTRA.get()));
                 CameraLockOnConfig.LOST_TARGET_GRACE.set(clamp(number(s, "lostTargetGrace", CameraLockOnConfig.LOST_TARGET_GRACE.get()), 0, 10));
+                CameraLockOnConfig.LINE_OF_SIGHT_MODE.set(text(s, "lineOfSightMode", CameraLockOnConfig.LINE_OF_SIGHT_MODE.get()));
+                CameraLockOnConfig.OCCLUDED_STEERING.set(bool(s, "occludedSteering", CameraLockOnConfig.OCCLUDED_STEERING.get()));
+                CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.set(clamp(number(s, "thirdPersonAimStrength", CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.get()), 0.25, 2.0));
+                ClientFeatureStore.setThirdPersonAimStyle(ClientFeatureStore.ThirdPersonAimStyle.fromName(
+                        text(s, "thirdPersonAimStyle", ClientFeatureStore.getThirdPersonAimStyle().name())));
+                ClientFeatureStore.setFreeCameraCursorMode(ClientFeatureStore.FreeCameraCursorMode.fromName(
+                        text(s, "freeCameraCursorMode", ClientFeatureStore.getFreeCameraCursorMode().name())));
+                CameraLockOnConfig.AIM_RAY_MODE.set(CameraLockOnConfig.AimRayMode.fromConfig(
+                        text(s, "aimRayMode", CameraLockOnConfig.AIM_RAY_MODE.get())).name());
+                ClientFeatureStore.setHardLockForcesFollowAim(bool(s, "hardLockForcesFollowAim",
+                        ClientFeatureStore.isHardLockForcesFollowAim()));
             }
 
             if (categories.contains(Category.AUTO)) {
@@ -248,7 +260,7 @@ public final class PresetStore {
         Preset preset = new Preset();
         preset.formatVersion = FORMAT_VERSION;
         preset.name = name;
-        preset.modVersion = "2.0.0";
+        preset.modVersion = "2.0.1";
         preset.categoryNames = categories.stream().map(Enum::name).toList();
         preset.settings = new JsonObject();
         preset.includeHudPosition = categories.contains(Category.HUD);
@@ -262,6 +274,7 @@ public final class PresetStore {
             put(s, "autoRetarget", CameraLockOnConfig.AUTO_RETARGET.get());
             put(s, "hostileOnly", CameraLockOnConfig.HOSTILE_ONLY.get());
             put(s, "lockOnRange", CameraLockOnConfig.LOCK_ON_RANGE.get());
+            put(s, "firstPersonAimStrength", CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.get());
             put(s, "aimPreset", CameraLockOnConfig.AIM_PRESET.get());
             put(s, "aimPointX", CameraLockOnConfig.AIM_POINT_X.get());
             put(s, "aimPointY", CameraLockOnConfig.AIM_POINT_Y.get());
@@ -281,6 +294,13 @@ public final class PresetStore {
             put(s, "suspendRiding", CameraLockOnConfig.SUSPEND_RIDING.get());
             put(s, "suspendElytra", CameraLockOnConfig.SUSPEND_ELYTRA.get());
             put(s, "lostTargetGrace", CameraLockOnConfig.LOST_TARGET_GRACE.get());
+            put(s, "lineOfSightMode", CameraLockOnConfig.LINE_OF_SIGHT_MODE.get());
+            put(s, "occludedSteering", CameraLockOnConfig.OCCLUDED_STEERING.get());
+            put(s, "thirdPersonAimStrength", CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.get());
+            put(s, "thirdPersonAimStyle", ClientFeatureStore.getThirdPersonAimStyle().name());
+            put(s, "freeCameraCursorMode", ClientFeatureStore.getFreeCameraCursorMode().name());
+            put(s, "aimRayMode", CameraLockOnConfig.AIM_RAY_MODE.get());
+            put(s, "hardLockForcesFollowAim", ClientFeatureStore.isHardLockForcesFollowAim());
         }
         if (categories.contains(Category.AUTO)) {
             put(s, "autoLock", CameraLockOnConfig.AUTO_LOCK.get());

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.locale.Language;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
@@ -21,9 +22,9 @@ import java.util.function.DoubleSupplier;
 /** Compact tabbed configuration screen for Camera Lock-On 2.0. */
 public final class LockOnConfigScreen extends Screen {
     private static final int PANEL_WIDTH = 340;
-    private static final int PANEL_HEIGHT = 260;
-    private static final int ROW_HEIGHT = 18;
-    private static final int ROW_STEP = 20;
+    private static final int PANEL_HEIGHT = 236;
+    private static final int ROW_HEIGHT = 16;
+    private static final int ROW_STEP = 18;
 
     private final Screen parent;
     private Page page = Page.MAIN;
@@ -37,10 +38,30 @@ public final class LockOnConfigScreen extends Screen {
         this.entityBlacklist.addAll(CameraLockOnConfig.ENTITY_BLACKLIST.get());
     }
 
+    private int panelWidth() {
+        return Math.min(PANEL_WIDTH, Math.max(220, this.width - 8));
+    }
+
+    private int panelHeight() {
+        return Math.min(PANEL_HEIGHT, Math.max(200, this.height - 8));
+    }
+
+    private int innerWidth() {
+        return panelWidth() - 24;
+    }
+
+    private int columnWidth() {
+        return Math.max(80, (innerWidth() - 6) / 2);
+    }
+
+    private int secondColumnX(int firstColumnX) {
+        return firstColumnX + columnWidth() + 6;
+    }
+
     @Override
     protected void init() {
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
+        int left = (this.width - panelWidth()) / 2;
+        int top = (this.height - panelHeight()) / 2;
         buildTabs(left, top + 25);
 
         int x = left + 12;
@@ -55,28 +76,34 @@ public final class LockOnConfigScreen extends Screen {
             case GROUP -> buildGroup(x, y);
         }
 
-        Component presetText = ClientFeatureStore.getLastLoadedPreset().isBlank()
-                ? Component.translatable("gui.camera_lockon.button.presets")
-                : Component.translatable(
-                        "gui.camera_lockon.format.keyValue",
-                        Component.translatable("gui.camera_lockon.button.preset_active"),
-                        Component.literal(compact(ClientFeatureStore.getLastLoadedPreset(), 12))
-                );
+        int footerGap = 5;
+        int footerWidth = (innerWidth() - footerGap * 2) / 3;
+        int footerX = left + 12;
+        int footerY = top + panelHeight() - 21;
+
+        Component presetText = Component.translatable("gui.camera_lockon.button.presets");
         Button presets = Button.builder(presetText, button -> setScreen(new PresetManagerScreen(this)))
-                .bounds(left + 12, top + PANEL_HEIGHT - 25, 102, 18)
+                .bounds(footerX, footerY, footerWidth, ROW_HEIGHT)
                 .build();
         presets.setTooltip(Tooltip.create(Component.translatable("gui.camera_lockon.button.presets.tooltip")));
         this.addRenderableWidget(presets);
 
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.camera_lockon.button.reset_defaults"), button -> confirmReset())
-                .bounds(left + 119, top + PANEL_HEIGHT - 25, 102, 18).build());
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.camera_lockon.button.done"), button -> closeAndSave())
-                .bounds(left + 226, top + PANEL_HEIGHT - 25, 102, 18).build());
+        Button resetDefaults = Button.builder(Component.translatable("gui.camera_lockon.button.reset_defaults"), button -> confirmReset())
+                .bounds(footerX + footerWidth + footerGap, footerY, footerWidth, ROW_HEIGHT).build();
+        Tooltip resetTooltip = tooltipIfPresent("gui.camera_lockon.button.reset_defaults");
+        if (resetTooltip != null) resetDefaults.setTooltip(resetTooltip);
+        this.addRenderableWidget(resetDefaults);
+
+        Button done = Button.builder(Component.translatable("gui.camera_lockon.button.done"), button -> closeAndSave())
+                .bounds(footerX + (footerWidth + footerGap) * 2, footerY, footerWidth, ROW_HEIGHT).build();
+        Tooltip doneTooltip = tooltipIfPresent("gui.camera_lockon.button.done");
+        if (doneTooltip != null) done.setTooltip(doneTooltip);
+        this.addRenderableWidget(done);
     }
 
     private void buildTabs(int left, int y) {
         Page[] pages = Page.values();
-        int totalWidth = PANEL_WIDTH - 24;
+        int totalWidth = innerWidth();
         for (int i = 0; i < pages.length; i++) {
             Page candidate = pages[i];
             int xStart = left + 12 + (i * totalWidth) / pages.length;
@@ -97,15 +124,18 @@ public final class LockOnConfigScreen extends Screen {
     private void buildMain(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.core_targeting"); y += 14;
         addToggle(x, y, "gui.camera_lockon.main.smart_lock", CameraLockOnConfig.SMART_LOCK);
-        addToggle(x + 161, y, "gui.camera_lockon.main.hostile_only", CameraLockOnConfig.HOSTILE_ONLY); y += ROW_STEP;
-        addSlider(x, y, 316, "gui.camera_lockon.main.range", "gui.camera_lockon.unit.blocks", 5, 128,
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.main.hostile_only", CameraLockOnConfig.HOSTILE_ONLY); y += ROW_STEP;
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.main.first_person_aim_strength", "gui.camera_lockon.unit.times", 0.25, 2.0,
+                CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH::get,
+                value -> CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.set(value), 2);
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.range", "gui.camera_lockon.unit.blocks", 5, 128,
                 CameraLockOnConfig.LOCK_ON_RANGE::get, value -> CameraLockOnConfig.LOCK_ON_RANGE.set(value), 0);
         y += ROW_STEP;
-        addCycle(x, y, 155, "gui.camera_lockon.main.aim", () -> CameraLockOnConfig.AimPreset.fromConfig(CameraLockOnConfig.AIM_PRESET.get()).getDisplayName(), () -> {
+        addCycle(x, y, columnWidth(), "gui.camera_lockon.main.aim", () -> CameraLockOnConfig.AimPreset.fromConfig(CameraLockOnConfig.AIM_PRESET.get()).getDisplayName(), () -> {
             CameraLockOnConfig.AimPreset next = CameraLockOnConfig.AimPreset.fromConfig(CameraLockOnConfig.AIM_PRESET.get()).next();
             CameraLockOnConfig.AIM_PRESET.set(next.name());
         });
-        addAction(x + 161, y, 155, "gui.camera_lockon.main.edit_global_aim", () -> setScreen(new AimPointConfigScreen(this,
+        addAction(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.edit_global_aim", () -> setScreen(new AimPointConfigScreen(this,
                 CameraLockOnConfig.AIM_POINT_X.get(), CameraLockOnConfig.AIM_POINT_Y.get(), (px, py) -> {
                     CameraLockOnConfig.AIM_POINT_X.set(px);
                     CameraLockOnConfig.AIM_POINT_Y.set(py);
@@ -114,52 +144,75 @@ public final class LockOnConfigScreen extends Screen {
                 })));
         y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.main.reticle", CameraLockOnConfig.SHOW_RETICLE);
-        addCycle(x + 161, y, 155, "gui.camera_lockon.main.color", () -> Component.translatable("gui.camera_lockon.color." + CameraLockOnConfig.RETICLE_COLOR.get().toLowerCase(Locale.ROOT)), () -> {
+        addCycle(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.color", () -> Component.translatable("gui.camera_lockon.color." + CameraLockOnConfig.RETICLE_COLOR.get().toLowerCase(Locale.ROOT)), () -> {
             List<String> values = List.of("Cyan", "Red", "Green", "Yellow", "Purple");
             int index = values.indexOf(CameraLockOnConfig.RETICLE_COLOR.get());
             CameraLockOnConfig.RETICLE_COLOR.set(values.get((index + 1) % values.size()));
         });
         y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.main.lock_sounds", CameraLockOnConfig.LOCK_SOUNDS);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.main.volume", "gui.camera_lockon.unit.percent", 0, 100,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.volume", "gui.camera_lockon.unit.percent", 0, 100,
                 () -> CameraLockOnConfig.SOUND_VOLUME.get() * 100.0D,
-                value -> CameraLockOnConfig.SOUND_VOLUME.set(value / 100.0D), 0);
+                value -> CameraLockOnConfig.SOUND_VOLUME.set(value / 100.0D), 0); y += ROW_STEP;
+        addCycle(x, y, columnWidth(), "gui.camera_lockon.main.projectile_assist", () -> CameraLockOnConfig.ProjectileAssistMode
+                .fromConfig(CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get()).getDisplayName(), () -> {
+            CameraLockOnConfig.ProjectileAssistMode next = CameraLockOnConfig.ProjectileAssistMode
+                    .fromConfig(CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get()).next();
+            CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(next.name());
+        });
+        addAction(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.projectile_settings",
+                () -> setScreen(new ProjectileSettingsScreen(this)));
+        y += ROW_STEP;
+        addAction(x, y, innerWidth(), "gui.camera_lockon.button.safe_server", this::applySafeServerPreset);
     }
 
     private void buildCamera(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.camera_steering"); y += 14;
-        addToggle(x, y, 316, "gui.camera_lockon.camera.dead_zone", CameraLockOnConfig.DEAD_ZONE); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.camera.horizontal", "gui.camera_lockon.unit.degrees", 0, 30,
+        addToggle(x, y, innerWidth(), "gui.camera_lockon.camera.dead_zone", CameraLockOnConfig.DEAD_ZONE); y += ROW_STEP;
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.camera.horizontal", "gui.camera_lockon.unit.degrees", 0, 30,
                 CameraLockOnConfig.DEAD_ZONE_HORIZONTAL::get, value -> CameraLockOnConfig.DEAD_ZONE_HORIZONTAL.set(value), 1);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.camera.vertical", "gui.camera_lockon.unit.degrees", 0, 20,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.camera.vertical", "gui.camera_lockon.unit.degrees", 0, 20,
                 CameraLockOnConfig.DEAD_ZONE_VERTICAL::get, value -> CameraLockOnConfig.DEAD_ZONE_VERTICAL.set(value), 1); y += ROW_STEP;
         addHeader(x, y, "gui.camera_lockon.header.pause_steering"); y += 14;
         addToggle(x, y, "gui.camera_lockon.camera.mining", CameraLockOnConfig.SUSPEND_MINING);
-        addToggle(x + 161, y, "gui.camera_lockon.camera.using_item", CameraLockOnConfig.SUSPEND_USING_ITEM); y += ROW_STEP;
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.camera.using_item", CameraLockOnConfig.SUSPEND_USING_ITEM); y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.camera.riding", CameraLockOnConfig.SUSPEND_RIDING);
-        addToggle(x + 161, y, "gui.camera_lockon.camera.elytra", CameraLockOnConfig.SUSPEND_ELYTRA); y += ROW_STEP;
-        addSlider(x, y, 316, "gui.camera_lockon.camera.grace", "gui.camera_lockon.unit.seconds", 0, 10,
-                CameraLockOnConfig.LOST_TARGET_GRACE::get, value -> CameraLockOnConfig.LOST_TARGET_GRACE.set(value), 2);
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.camera.elytra", CameraLockOnConfig.SUSPEND_ELYTRA); y += ROW_STEP;
+        addCycle(x, y, columnWidth(), "gui.camera_lockon.camera.line_of_sight", () -> CameraLockOnConfig.LineOfSightMode
+                .fromConfig(CameraLockOnConfig.LINE_OF_SIGHT_MODE.get()).getDisplayName(), () -> {
+            CameraLockOnConfig.LineOfSightMode next = CameraLockOnConfig.LineOfSightMode
+                    .fromConfig(CameraLockOnConfig.LINE_OF_SIGHT_MODE.get()).next();
+            CameraLockOnConfig.LINE_OF_SIGHT_MODE.set(next.name());
+            if (next == CameraLockOnConfig.LineOfSightMode.STRICT) {
+                CameraLockOnConfig.OCCLUDED_STEERING.set(false);
+            }
+        });
+        addToggle(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.camera.occluded_steering", CameraLockOnConfig.OCCLUDED_STEERING); y += ROW_STEP;
+        addSlider(x, y, innerWidth(), "gui.camera_lockon.camera.grace", "gui.camera_lockon.unit.seconds", 0, 10,
+                CameraLockOnConfig.LOST_TARGET_GRACE::get, value -> CameraLockOnConfig.LOST_TARGET_GRACE.set(value), 2); y += ROW_STEP;
+        addAction(x, y, innerWidth(), "gui.camera_lockon.camera.third_person_settings",
+                () -> setScreen(new ThirdPersonCameraSettingsScreen(this)));
+
     }
 
     private void buildAuto(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.auto_acquisition"); y += 14;
         addToggle(x, y, "gui.camera_lockon.auto.auto_lock", CameraLockOnConfig.AUTO_LOCK);
-        addToggle(x + 161, y, "gui.camera_lockon.auto.auto_retarget", CameraLockOnConfig.AUTO_RETARGET); y += ROW_STEP;
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.auto.auto_retarget", CameraLockOnConfig.AUTO_RETARGET); y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.auto.pixel_indicator", CameraLockOnConfig.AUTO_LOCK_INDICATOR);
-        addCycle(x + 161, y, 155, "gui.camera_lockon.auto.switch", () -> ClientFeatureStore.getSwitchTargetMode().getDisplayName(), () -> {
+        addCycle(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.auto.switch", () -> ClientFeatureStore.getSwitchTargetMode().getDisplayName(), () -> {
             ClientFeatureStore.SwitchTargetMode next = ClientFeatureStore.getSwitchTargetMode().next();
             ClientFeatureStore.setSwitchTargetMode(next);
         }); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.auto.aim_delay", "gui.camera_lockon.unit.seconds", 0.05, 3,
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.auto.aim_delay", "gui.camera_lockon.unit.seconds", 0.05, 3,
                 CameraLockOnConfig.AUTO_LOCK_DELAY::get, value -> CameraLockOnConfig.AUTO_LOCK_DELAY.set(value), 2);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.auto.unlock_cooldown", "gui.camera_lockon.unit.seconds", 0, 5,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.auto.unlock_cooldown", "gui.camera_lockon.unit.seconds", 0, 5,
                 CameraLockOnConfig.AUTO_LOCK_COOLDOWN::get, value -> CameraLockOnConfig.AUTO_LOCK_COOLDOWN.set(value), 2); y += ROW_STEP;
-        addCycle(x, y, 316, "gui.camera_lockon.auto.lock_on_hit", () -> CameraLockOnConfig.LockOnHitMode.fromConfig(CameraLockOnConfig.LOCK_ON_HIT_MODE.get()).getDisplayName(), () -> {
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.auto.lock_on_hit", () -> CameraLockOnConfig.LockOnHitMode.fromConfig(CameraLockOnConfig.LOCK_ON_HIT_MODE.get()).getDisplayName(), () -> {
             CameraLockOnConfig.LockOnHitMode next = CameraLockOnConfig.LockOnHitMode.fromConfig(CameraLockOnConfig.LOCK_ON_HIT_MODE.get()).next();
             CameraLockOnConfig.LOCK_ON_HIT_MODE.set(next.name());
         }); y += ROW_STEP;
-        addCycle(x, y, 316, "gui.camera_lockon.auto.temporary_pin", () -> CameraLockOnConfig.TemporaryPinMode.fromConfig(CameraLockOnConfig.TEMPORARY_PIN_MODE.get()).getDisplayName(), () -> {
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.auto.temporary_pin", () -> CameraLockOnConfig.TemporaryPinMode.fromConfig(CameraLockOnConfig.TEMPORARY_PIN_MODE.get()).getDisplayName(), () -> {
             CameraLockOnConfig.TemporaryPinMode next = CameraLockOnConfig.TemporaryPinMode.fromConfig(CameraLockOnConfig.TEMPORARY_PIN_MODE.get()).next();
             CameraLockOnConfig.TEMPORARY_PIN_MODE.set(next.name());
         });
@@ -167,49 +220,50 @@ public final class LockOnConfigScreen extends Screen {
 
     private void buildFilter(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.entity_rules"); y += 14;
-        addCycle(x, y, 316, "gui.camera_lockon.filter.type_filter", () -> CameraLockOnConfig.TargetTypeMode.fromConfig(CameraLockOnConfig.TARGET_TYPE_MODE.get()).getDisplayName(), () -> {
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.filter.type_filter", () -> CameraLockOnConfig.TargetTypeMode.fromConfig(CameraLockOnConfig.TARGET_TYPE_MODE.get()).getDisplayName(), () -> {
             CameraLockOnConfig.TargetTypeMode next = CameraLockOnConfig.TargetTypeMode.fromConfig(CameraLockOnConfig.TARGET_TYPE_MODE.get()).next();
             CameraLockOnConfig.TARGET_TYPE_MODE.set(next.name());
         }); y += ROW_STEP;
         String selected = CameraLockOnConfig.SELECTED_ENTITY_TYPE.get();
         Component selectedEntityVal = selected.isBlank() ? Component.translatable("gui.camera_lockon.none") : Component.literal(TargetingRules.getEntityDisplayName(selected));
         Component selectedEntityText = Component.translatable("gui.camera_lockon.format.keyValue", Component.translatable("gui.camera_lockon.filter.selected_entity"), selectedEntityVal);
-        addAction(x, y, 316, selectedEntityText, () -> setScreen(new EntitySelectorScreen(this,
+        addAction(x, y, innerWidth(), selectedEntityText, () -> setScreen(new EntitySelectorScreen(this,
                 selected, this.entityHistory, id -> {
                     CameraLockOnConfig.SELECTED_ENTITY_TYPE.set(id);
                     saveLists();
                     rebuildWidgets();
                 })), Component.translatable("gui.camera_lockon.filter.selected_entity.tooltip")); y += ROW_STEP;
-        addCycle(x, y, 316, "gui.camera_lockon.filter.target_priority", () -> ClientFeatureStore.getTargetPriority().getDisplayName(), () -> {
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.filter.target_priority", () -> ClientFeatureStore.getTargetPriority().getDisplayName(), () -> {
             ClientFeatureStore.setTargetPriority(ClientFeatureStore.getTargetPriority().next());
         }); y += ROW_STEP;
-        addCycle(x, y, 316, "gui.camera_lockon.filter.retarget_rule", () -> CameraLockOnConfig.RetargetMode.fromConfig(CameraLockOnConfig.RETARGET_MODE.get()).getDisplayName(), () -> {
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.filter.retarget_rule", () -> CameraLockOnConfig.RetargetMode.fromConfig(CameraLockOnConfig.RETARGET_MODE.get()).getDisplayName(), () -> {
             CameraLockOnConfig.RetargetMode next = CameraLockOnConfig.RetargetMode.fromConfig(CameraLockOnConfig.RETARGET_MODE.get()).next();
             CameraLockOnConfig.RETARGET_MODE.set(next.name());
         }); y += ROW_STEP;
         Component blacklistText = Component.translatable("gui.camera_lockon.filter.blacklist_count", this.entityBlacklist.size());
-        addAction(x, y, 155, blacklistText, () -> setScreen(new BlacklistScreen(this, this.entityBlacklist, this.entityHistory)), Component.translatable("gui.camera_lockon.filter.blacklist.tooltip"));
+        addAction(x, y, columnWidth(), blacklistText, () -> setScreen(new BlacklistScreen(this, this.entityBlacklist, this.entityHistory)), Component.translatable("gui.camera_lockon.filter.blacklist.tooltip"));
         Component aimOverridesText = Component.translatable("gui.camera_lockon.filter.aim_overrides_count", EntityAimPointStore.snapshot().size());
-        addAction(x + 161, y, 155, aimOverridesText, () -> setScreen(new EntityAimPointManagerScreen(this, this.entityHistory)), Component.translatable("gui.camera_lockon.filter.aim_overrides.tooltip")); y += ROW_STEP;
+        addAction(secondColumnX(x), y, columnWidth(), aimOverridesText, () -> setScreen(new EntityAimPointManagerScreen(this, this.entityHistory)), Component.translatable("gui.camera_lockon.filter.aim_overrides.tooltip")); y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.filter.prefer_bosses", CameraLockOnConfig.PREFER_BOSSES);
-        addToggle(x + 161, y, "gui.camera_lockon.filter.show_registry_ids", CameraLockOnConfig.SHOW_REGISTRY_IDS);
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.filter.show_registry_ids", CameraLockOnConfig.SHOW_REGISTRY_IDS);
     }
 
     private void buildHud(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.target_mini_hud"); y += 14;
         addToggle(x, y, "gui.camera_lockon.hud.hud_enabled", CameraLockOnConfig.TARGET_HUD);
-        addToggle(x + 161, y, "gui.camera_lockon.hud.damage_flash", CameraLockOnConfig.HUD_ANIMATE_DAMAGE); y += ROW_STEP;
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.hud.target_outline", CameraLockOnConfig.TARGET_OUTLINE); y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.hud.name", CameraLockOnConfig.HUD_SHOW_NAME);
-        addToggle(x + 161, y, "gui.camera_lockon.hud.health", CameraLockOnConfig.HUD_SHOW_HEALTH); y += ROW_STEP;
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.hud.health", CameraLockOnConfig.HUD_SHOW_HEALTH); y += ROW_STEP;
         addToggle(x, y, "gui.camera_lockon.hud.distance", CameraLockOnConfig.HUD_SHOW_DISTANCE);
-        addToggle(x + 161, y, "gui.camera_lockon.hud.armor_points", CameraLockOnConfig.HUD_SHOW_ARMOR); y += ROW_STEP;
-        addToggle(x, y, "gui.camera_lockon.hud.registry_id", CameraLockOnConfig.SHOW_REGISTRY_IDS);
-        addToggle(x + 161, y, "gui.camera_lockon.hud.source_mod", CameraLockOnConfig.HUD_SHOW_MOD_NAME); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.hud.scale", "gui.camera_lockon.unit.times", 0.6, 1.6,
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.hud.armor_points", CameraLockOnConfig.HUD_SHOW_ARMOR); y += ROW_STEP;
+        addToggle(x, y, "gui.camera_lockon.hud.damage_flash", CameraLockOnConfig.HUD_ANIMATE_DAMAGE);
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.hud.registry_id", CameraLockOnConfig.SHOW_REGISTRY_IDS); y += ROW_STEP;
+        addToggle(x, y, innerWidth(), "gui.camera_lockon.hud.source_mod", CameraLockOnConfig.HUD_SHOW_MOD_NAME); y += ROW_STEP;
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.hud.scale", "gui.camera_lockon.unit.times", 0.6, 1.6,
                 CameraLockOnConfig.HUD_SCALE::get, value -> CameraLockOnConfig.HUD_SCALE.set(value), 2);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.hud.background", "", 0.05, 1,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.hud.background", "", 0.05, 1,
                 CameraLockOnConfig.HUD_OPACITY::get, value -> CameraLockOnConfig.HUD_OPACITY.set(value), 2); y += ROW_STEP;
-        addAction(x, y, 316, "gui.camera_lockon.hud.adjust_position", () -> setScreen(new HudPositionEditorScreen(this,
+        addAction(x, y, innerWidth(), "gui.camera_lockon.hud.adjust_position", () -> setScreen(new HudPositionEditorScreen(this,
                 CameraLockOnConfig.HUD_ANCHOR_X.get(), CameraLockOnConfig.HUD_ANCHOR_Y.get(), LockOnHudRenderer.optionsFromConfig(), (px, py) -> {
                     CameraLockOnConfig.HUD_ANCHOR_X.set(px);
                     CameraLockOnConfig.HUD_ANCHOR_Y.set(py);
@@ -220,50 +274,50 @@ public final class LockOnConfigScreen extends Screen {
     private void buildThreat(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.attacker_awareness"); y += 14;
         addToggle(x, y, "gui.camera_lockon.threat.indicators", CameraLockOnConfig.ATTACKER_INDICATOR);
-        addToggle(x + 161, y, "gui.camera_lockon.threat.group_side", CameraLockOnConfig.GROUP_ATTACKER_DIRECTIONS); y += ROW_STEP;
-        addCycle(x, y, 316, "gui.camera_lockon.threat.response", () -> CameraLockOnConfig.AttackerResponse.fromConfig(CameraLockOnConfig.ATTACKER_RESPONSE.get()).getDisplayName(), () -> {
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.threat.group_side", CameraLockOnConfig.GROUP_ATTACKER_DIRECTIONS); y += ROW_STEP;
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.threat.response", () -> CameraLockOnConfig.AttackerResponse.fromConfig(CameraLockOnConfig.ATTACKER_RESPONSE.get()).getDisplayName(), () -> {
             CameraLockOnConfig.AttackerResponse next = CameraLockOnConfig.AttackerResponse.fromConfig(CameraLockOnConfig.ATTACKER_RESPONSE.get()).next();
             CameraLockOnConfig.ATTACKER_RESPONSE.set(next.name());
         }); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.threat.required_hits", "", 2, 5,
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.threat.required_hits", "", 2, 5,
                 () -> CameraLockOnConfig.ATTACKER_REQUIRED_HITS.get().doubleValue(), value -> CameraLockOnConfig.ATTACKER_REQUIRED_HITS.set((int) Math.round(value)), 0);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.threat.hit_window", "gui.camera_lockon.unit.seconds", 1, 15,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.threat.hit_window", "gui.camera_lockon.unit.seconds", 1, 15,
                 CameraLockOnConfig.ATTACKER_HIT_WINDOW::get, value -> CameraLockOnConfig.ATTACKER_HIT_WINDOW.set(value), 1); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.threat.lock_range", "gui.camera_lockon.unit.blocks", 4, 64,
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.threat.lock_range", "gui.camera_lockon.unit.blocks", 4, 64,
                 CameraLockOnConfig.ATTACKER_LOCK_RANGE::get, value -> CameraLockOnConfig.ATTACKER_LOCK_RANGE.set(value), 0);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.threat.indicators_count", "", 1, 6,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.threat.indicators_count", "", 1, 6,
                 () -> CameraLockOnConfig.MAX_ATTACKER_INDICATORS.get().doubleValue(), value -> CameraLockOnConfig.MAX_ATTACKER_INDICATORS.set((int) Math.round(value)), 0); y += ROW_STEP;
-        addToggle(x, y, 316, "gui.camera_lockon.threat.replace_target", CameraLockOnConfig.ATTACKER_REPLACE_TARGET);
+        addToggle(x, y, innerWidth(), "gui.camera_lockon.threat.replace_target", CameraLockOnConfig.ATTACKER_REPLACE_TARGET);
     }
 
     private void buildGroup(int x, int y) {
         addHeader(x, y, "gui.camera_lockon.header.experimental_sweep"); y += 14;
         addToggle(x, y, "gui.camera_lockon.group.group_aim", CameraLockOnConfig.GROUP_AIM);
-        addToggle(x + 161, y, "gui.camera_lockon.group.same_type_only", CameraLockOnConfig.GROUP_AIM_SAME_TYPE_ONLY); y += ROW_STEP;
-        addCycle(x, y, 316, "gui.camera_lockon.group.activation", () -> CameraLockOnConfig.GroupAimActivation.fromConfig(CameraLockOnConfig.GROUP_AIM_ACTIVATION.get()).getDisplayName(), () -> {
+        addToggle(secondColumnX(x), y, "gui.camera_lockon.group.same_type_only", CameraLockOnConfig.GROUP_AIM_SAME_TYPE_ONLY); y += ROW_STEP;
+        addCycle(x, y, innerWidth(), "gui.camera_lockon.group.activation", () -> CameraLockOnConfig.GroupAimActivation.fromConfig(CameraLockOnConfig.GROUP_AIM_ACTIVATION.get()).getDisplayName(), () -> {
             CameraLockOnConfig.GroupAimActivation next = CameraLockOnConfig.GroupAimActivation.fromConfig(CameraLockOnConfig.GROUP_AIM_ACTIVATION.get()).next();
             CameraLockOnConfig.GROUP_AIM_ACTIVATION.set(next.name());
         }); y += ROW_STEP;
         Component aoeText = Component.translatable("gui.camera_lockon.group.manual_aoe_weapons_count", AoeWeaponStore.snapshot().size());
-        addAction(x, y, 316, aoeText, () -> setScreen(new AoeWeaponManagerScreen(this)), Component.translatable("gui.camera_lockon.group.manual_aoe_weapons.tooltip")); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.group.radius", "gui.camera_lockon.unit.blocks", 0.5, 6,
+        addAction(x, y, innerWidth(), aoeText, () -> setScreen(new AoeWeaponManagerScreen(this)), Component.translatable("gui.camera_lockon.group.manual_aoe_weapons.tooltip")); y += ROW_STEP;
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.group.radius", "gui.camera_lockon.unit.blocks", 0.5, 6,
                 CameraLockOnConfig.GROUP_AIM_RADIUS::get, value -> CameraLockOnConfig.GROUP_AIM_RADIUS.set(value), 1);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.group.strength", "", 0, 1,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.group.strength", "", 0, 1,
                 CameraLockOnConfig.GROUP_AIM_STRENGTH::get, value -> CameraLockOnConfig.GROUP_AIM_STRENGTH.set(value), 2); y += ROW_STEP;
-        addSlider(x, y, 155, "gui.camera_lockon.group.max_targets", "", 2, 8,
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.group.max_targets", "", 2, 8,
                 () -> CameraLockOnConfig.GROUP_AIM_MAX_TARGETS.get().doubleValue(), value -> CameraLockOnConfig.GROUP_AIM_MAX_TARGETS.set((int) Math.round(value)), 0);
-        addSlider(x + 161, y, 155, "gui.camera_lockon.group.max_offset", "gui.camera_lockon.unit.blocks", 0.1, 3,
+        addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.group.max_offset", "gui.camera_lockon.unit.blocks", 0.1, 3,
                 CameraLockOnConfig.GROUP_AIM_MAX_OFFSET::get, value -> CameraLockOnConfig.GROUP_AIM_MAX_OFFSET.set(value), 2);
     }
 
     private void addHeader(int x, int y, String key) {
-        Button label = Button.builder(Component.translatable(key), ignored -> { }).bounds(x, y, 316, 12).build();
+        Button label = Button.builder(Component.translatable(key), ignored -> { }).bounds(x, y, innerWidth(), 12).build();
         label.active = false;
         this.addRenderableWidget(label);
     }
 
     private void addToggle(int x, int y, String key, CameraLockOnConfig.BooleanValue value) {
-        addToggle(x, y, 155, key, value);
+        addToggle(x, y, columnWidth(), key, value);
     }
 
     private void addToggle(int x, int y, int width, String key, CameraLockOnConfig.BooleanValue value) {
@@ -275,7 +329,8 @@ public final class LockOnConfigScreen extends Screen {
                     saveConfig();
                     rebuildWidgets();
                 }).bounds(x, y, width, ROW_HEIGHT).build();
-        button.setTooltip(Tooltip.create(Component.translatable(key + ".tooltip").withStyle(ChatFormatting.WHITE)));
+        Tooltip tooltip = tooltipIfPresent(key);
+        if (tooltip != null) button.setTooltip(tooltip);
         this.addRenderableWidget(button);
     }
 
@@ -287,13 +342,15 @@ public final class LockOnConfigScreen extends Screen {
                     saveConfig();
                     rebuildWidgets();
                 }).bounds(x, y, width, ROW_HEIGHT).build();
-        button.setTooltip(Tooltip.create(Component.translatable(key + ".tooltip").withStyle(ChatFormatting.WHITE)));
+        Tooltip tooltip = tooltipIfPresent(key);
+        if (tooltip != null) button.setTooltip(tooltip);
         this.addRenderableWidget(button);
     }
 
     private void addAction(int x, int y, int width, String key, Runnable action) {
         Button button = Button.builder(Component.translatable(key), ignored -> action.run()).bounds(x, y, width, ROW_HEIGHT).build();
-        button.setTooltip(Tooltip.create(Component.translatable(key + ".tooltip").withStyle(ChatFormatting.WHITE)));
+        Tooltip tooltip = tooltipIfPresent(key);
+        if (tooltip != null) button.setTooltip(tooltip);
         this.addRenderableWidget(button);
     }
 
@@ -305,11 +362,37 @@ public final class LockOnConfigScreen extends Screen {
 
     private void addSlider(int x, int y, int width, String key, String suffixKey, double min, double max,
                            DoubleSupplier getter, DoubleConsumer setter, int decimals) {
-        ValueSlider slider = new ValueSlider(x, y, width, key, suffixKey, min, max, getter.getAsDouble(), decimals, value -> {
-            setter.accept(value);
-            saveConfig();
-        });
+        ValueSlider slider = new ValueSlider(x, y, width, key, suffixKey, min, max, getter.getAsDouble(), decimals, setter);
+        Tooltip tooltip = tooltipIfPresent(key);
+        if (tooltip != null) slider.setTooltip(tooltip);
         this.addRenderableWidget(slider);
+    }
+
+    private Tooltip tooltipIfPresent(String key) {
+        String tooltipKey = key.endsWith(".tooltip") ? key : key + ".tooltip";
+        return Language.getInstance().has(tooltipKey)
+                ? Tooltip.create(Component.translatable(tooltipKey).withStyle(ChatFormatting.WHITE))
+                : null;
+    }
+
+    private void applySafeServerPreset() {
+        CameraLockOnConfig.AUTO_LOCK.set(false);
+        CameraLockOnConfig.AUTO_RETARGET.set(false);
+        CameraLockOnConfig.AUTO_LOCK_INDICATOR.set(false);
+        CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(CameraLockOnConfig.ProjectileAssistMode.OFF.name());
+        CameraLockOnConfig.AUTO_RELEASE_BOW.set(false);
+        CameraLockOnConfig.AUTO_RECHARGE_BOW.set(false);
+        CameraLockOnConfig.TRAJECTORY_PREVIEW.set(false);
+        CameraLockOnConfig.TRAJECTORY_SHOW_WITHOUT_LOCK.set(false);
+        CameraLockOnConfig.TARGET_OUTLINE.set(false);
+        CameraLockOnConfig.ADAPTIVE_AIM_CALIBRATION.set(false);
+        CameraLockOnConfig.LINE_OF_SIGHT_MODE.set(CameraLockOnConfig.LineOfSightMode.STRICT.name());
+        CameraLockOnConfig.OCCLUDED_STEERING.set(false);
+        ClientFeatureStore.setSwitchTargetMode(ClientFeatureStore.SwitchTargetMode.SMART);
+        ClientFeatureStore.setTargetPriority(ClientFeatureStore.TargetPriority.BALANCED);
+        ClientFeatureStore.setLastLoadedPreset("safe_server");
+        saveConfig();
+        rebuildWidgets();
     }
 
     private void confirmReset() {
@@ -326,6 +409,8 @@ public final class LockOnConfigScreen extends Screen {
     private void resetDefaults() {
         CameraLockOnConfig.LOCK_ON_RANGE.set(CameraLockOnConfig.DEFAULT_LOCK_ON_RANGE);
         CameraLockOnConfig.SMART_LOCK.set(CameraLockOnConfig.DEFAULT_SMART_LOCK);
+        CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.set(CameraLockOnConfig.DEFAULT_FIRST_PERSON_AIM_STRENGTH);
+        CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.set(CameraLockOnConfig.DEFAULT_THIRD_PERSON_AIM_STRENGTH);
         CameraLockOnConfig.SHOW_RETICLE.set(CameraLockOnConfig.DEFAULT_SHOW_RETICLE);
         CameraLockOnConfig.RETICLE_COLOR.set(CameraLockOnConfig.DEFAULT_RETICLE_COLOR);
         CameraLockOnConfig.RETICLE_OPACITY.set(CameraLockOnConfig.DEFAULT_RETICLE_OPACITY);
@@ -335,6 +420,8 @@ public final class LockOnConfigScreen extends Screen {
         CameraLockOnConfig.AIM_POINT_X.set(CameraLockOnConfig.DEFAULT_AIM_POINT_X);
         CameraLockOnConfig.AIM_POINT_Y.set(CameraLockOnConfig.DEFAULT_AIM_POINT_Y);
         CameraLockOnConfig.LOST_TARGET_GRACE.set(CameraLockOnConfig.DEFAULT_LOST_TARGET_GRACE);
+        CameraLockOnConfig.LINE_OF_SIGHT_MODE.set(CameraLockOnConfig.DEFAULT_LINE_OF_SIGHT_MODE.name());
+        CameraLockOnConfig.OCCLUDED_STEERING.set(CameraLockOnConfig.DEFAULT_OCCLUDED_STEERING);
         CameraLockOnConfig.LOCK_SOUNDS.set(CameraLockOnConfig.DEFAULT_LOCK_SOUNDS);
         CameraLockOnConfig.SOUND_VOLUME.set(CameraLockOnConfig.DEFAULT_SOUND_VOLUME);
 
@@ -361,6 +448,7 @@ public final class LockOnConfigScreen extends Screen {
         ClientFeatureStore.setTargetPriority(ClientFeatureStore.TargetPriority.BALANCED);
 
         CameraLockOnConfig.TARGET_HUD.set(CameraLockOnConfig.DEFAULT_TARGET_HUD);
+        CameraLockOnConfig.TARGET_OUTLINE.set(CameraLockOnConfig.DEFAULT_TARGET_OUTLINE);
         CameraLockOnConfig.HUD_SHOW_NAME.set(CameraLockOnConfig.DEFAULT_HUD_SHOW_NAME);
         CameraLockOnConfig.HUD_SHOW_HEALTH.set(CameraLockOnConfig.DEFAULT_HUD_SHOW_HEALTH);
         CameraLockOnConfig.HUD_SHOW_DISTANCE.set(CameraLockOnConfig.DEFAULT_HUD_SHOW_DISTANCE);
@@ -396,6 +484,27 @@ public final class LockOnConfigScreen extends Screen {
         CameraLockOnConfig.GROUP_AIM_STRENGTH.set(CameraLockOnConfig.DEFAULT_GROUP_AIM_STRENGTH);
         CameraLockOnConfig.GROUP_AIM_MAX_OFFSET.set(CameraLockOnConfig.DEFAULT_GROUP_AIM_MAX_OFFSET);
         CameraLockOnConfig.GROUP_AIM_SAME_TYPE_ONLY.set(CameraLockOnConfig.DEFAULT_GROUP_AIM_SAME_TYPE_ONLY);
+        CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(CameraLockOnConfig.DEFAULT_PROJECTILE_ASSIST_MODE.name());
+        CameraLockOnConfig.BOW_AIM_REFERENCE.set(CameraLockOnConfig.DEFAULT_BOW_AIM_REFERENCE.name());
+        CameraLockOnConfig.PROJECTILE_PREDICTION_STRENGTH.set(CameraLockOnConfig.DEFAULT_PROJECTILE_PREDICTION_STRENGTH);
+        CameraLockOnConfig.PROJECTILE_EARLY_PREDICTION.set(CameraLockOnConfig.DEFAULT_PROJECTILE_EARLY_PREDICTION);
+        CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.set(CameraLockOnConfig.DEFAULT_PROJECTILE_MOTION_SMOOTHING);
+        CameraLockOnConfig.PROJECTILE_MAX_FLIGHT_TIME.set(CameraLockOnConfig.DEFAULT_PROJECTILE_MAX_FLIGHT_TIME);
+        CameraLockOnConfig.PROJECTILE_COMPENSATE_DROP.set(CameraLockOnConfig.DEFAULT_PROJECTILE_COMPENSATE_DROP);
+        CameraLockOnConfig.PROJECTILE_COMPENSATE_PLAYER_MOVEMENT.set(CameraLockOnConfig.DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT);
+        CameraLockOnConfig.AUTO_RELEASE_BOW.set(CameraLockOnConfig.DEFAULT_AUTO_RELEASE_BOW);
+        CameraLockOnConfig.AUTO_RECHARGE_BOW.set(CameraLockOnConfig.DEFAULT_AUTO_RECHARGE_BOW);
+        CameraLockOnConfig.AUTO_CYCLE_CROSSBOW.set(CameraLockOnConfig.DEFAULT_AUTO_CYCLE_CROSSBOW);
+        CameraLockOnConfig.SMART_PROJECTILE_HITBOX.set(CameraLockOnConfig.DEFAULT_SMART_PROJECTILE_HITBOX);
+        CameraLockOnConfig.ADAPTIVE_AIM_CALIBRATION.set(CameraLockOnConfig.DEFAULT_ADAPTIVE_AIM_CALIBRATION);
+        CameraLockOnConfig.TRAJECTORY_PREVIEW.set(CameraLockOnConfig.DEFAULT_TRAJECTORY_PREVIEW);
+        CameraLockOnConfig.TRAJECTORY_FULL_CHARGE.set(CameraLockOnConfig.DEFAULT_TRAJECTORY_FULL_CHARGE);
+        CameraLockOnConfig.TRAJECTORY_SHOW_WITHOUT_LOCK.set(CameraLockOnConfig.DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK);
+        CameraLockOnConfig.TRAJECTORY_PREVIEW_LENGTH.set(CameraLockOnConfig.DEFAULT_TRAJECTORY_PREVIEW_LENGTH);
+        CameraLockOnConfig.AUTO_RELEASE_BOW_CHARGE.set(CameraLockOnConfig.DEFAULT_AUTO_RELEASE_BOW_CHARGE);
+        CameraLockOnConfig.AUTO_RELEASE_AIM_TOLERANCE.set(CameraLockOnConfig.DEFAULT_AUTO_RELEASE_AIM_TOLERANCE);
+        ClientFeatureStore.setLastLoadedPreset("");
+        ClientFeatureStore.resetCameraDefaults();
 
         saveConfig();
         rebuildWidgets();
@@ -408,7 +517,14 @@ public final class LockOnConfigScreen extends Screen {
     }
 
     private void saveConfig() {
-        CameraLockOnConfig.CLIENT_SPEC.save();
+        try {
+            CameraLockOnConfig.CLIENT_SPEC.save();
+        } catch (RuntimeException exception) {
+            // NightConfig may temporarily fail an atomic replace on Windows when the file
+            // is locked by another process. A config I/O problem must not crash the UI.
+            System.err.println("[Camera Lock-On] Could not save client config; it will be retried later: "
+                    + exception.getMessage());
+        }
     }
 
     private static String compact(String value, int maximum) {
@@ -430,10 +546,14 @@ public final class LockOnConfigScreen extends Screen {
 
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        super.renderBackground(graphics, mouseX, mouseY, partialTick);
-        int left = (this.width - PANEL_WIDTH) / 2;
-        int top = (this.height - PANEL_HEIGHT) / 2;
-        AimPointConfigScreen.drawPanel(graphics, left, top, PANEL_WIDTH, PANEL_HEIGHT);
+        // Keep the live world sharp. Calling Screen#renderBackground applies the
+        // vanilla 1.21 menu blur before drawing our panel.
+        if (this.minecraft == null || this.minecraft.level == null) {
+            graphics.fill(0, 0, this.width, this.height, 0xFF101218);
+        }
+        int left = (this.width - panelWidth()) / 2;
+        int top = (this.height - panelHeight()) / 2;
+        AimPointConfigScreen.drawPanel(graphics, left, top, panelWidth(), panelHeight());
     }
 
     @Override
@@ -441,7 +561,7 @@ public final class LockOnConfigScreen extends Screen {
         this.renderBackground(graphics, mouseX, mouseY, partialTick);
         graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
         super.render(graphics, mouseX, mouseY, partialTick);
-        int top = (this.height - PANEL_HEIGHT) / 2;
+        int top = (this.height - panelHeight()) / 2;
         graphics.drawCenteredString(this.font, "Camera Lock-On 2.0", this.width / 2, top + 9, 0xFFFFFFFF);
     }
 
@@ -493,7 +613,13 @@ public final class LockOnConfigScreen extends Screen {
                     : String.format(Locale.ROOT, "%." + this.decimals + "f", actual);
             Component labelComponent = Component.translatable(this.key);
             Component suffixComponent = this.suffixKey.isEmpty() ? Component.empty() : Component.translatable(this.suffixKey);
-            setMessage(Component.translatable("gui.camera_lockon.format.sliderValue", labelComponent, number, suffixComponent));
+            Component message = Component.translatable(
+                    "gui.camera_lockon.format.sliderValue", labelComponent, number, suffixComponent);
+            if ((this.key.endsWith("aim_strength")) && actual > 1.25D) {
+                message = message.copy().append(
+                        Component.literal(" !").withStyle(ChatFormatting.GOLD));
+            }
+            setMessage(message);
         }
 
         @Override

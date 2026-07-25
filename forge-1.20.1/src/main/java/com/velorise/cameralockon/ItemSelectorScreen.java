@@ -28,12 +28,11 @@ public final class ItemSelectorScreen extends Screen {
     private static final int VISIBLE_ROWS = LIST_HEIGHT / ROW_HEIGHT;
     private static final int SCROLLBAR_WIDTH = 6;
 
-    private static String rememberedSearch = "";
-    private static int rememberedScroll;
-
     private final Screen parentScreen;
     private final Consumer<String> selectionCallback;
     private final List<String> unavailableIds;
+    private final Component selectorTitle;
+    private final Component addDescription;
 
     private final List<ItemOption> allOptions = new ArrayList<>();
     private final List<ItemOption> filteredOptions = new ArrayList<>();
@@ -41,8 +40,8 @@ public final class ItemSelectorScreen extends Screen {
     private EditBox searchBox;
     private Button addButton;
     private ItemOption selected;
-    private String searchText = rememberedSearch;
-    private int scrollOffset = rememberedScroll;
+    private String searchText = "";
+    private int scrollOffset;
     private boolean draggingScrollbar;
     private int scrollbarGrabOffset;
 
@@ -56,12 +55,34 @@ public final class ItemSelectorScreen extends Screen {
             List<String> unavailableIds,
             Consumer<String> selectionCallback
     ) {
-        super(Component.literal("Select AOE Weapon"));
+        this(
+                parentScreen,
+                unavailableIds,
+                selectionCallback,
+                Component.literal("Select AOE Weapon"),
+                Component.literal("Add the selected item as a manual AOE weapon override.")
+        );
+    }
+
+    public ItemSelectorScreen(
+            Screen parentScreen,
+            List<String> unavailableIds,
+            Consumer<String> selectionCallback,
+            Component selectorTitle,
+            Component addDescription
+    ) {
+        super(selectorTitle == null ? Component.literal("Select Item") : selectorTitle);
         this.parentScreen = parentScreen;
         this.unavailableIds = unavailableIds == null
                 ? new ArrayList<>()
                 : new ArrayList<>(unavailableIds);
         this.selectionCallback = selectionCallback;
+        this.selectorTitle = selectorTitle == null
+                ? Component.literal("Select Item")
+                : selectorTitle;
+        this.addDescription = addDescription == null
+                ? Component.literal("Add the selected item.")
+                : addDescription;
     }
 
     @Override
@@ -98,9 +119,7 @@ public final class ItemSelectorScreen extends Screen {
         this.addButton = Button.builder(Component.literal("Add"), button -> addSelected())
                 .bounds(left + 198, top + 184, 72, 18)
                 .build();
-        this.addButton.setTooltip(Tooltip.create(Component.literal(
-                "Add the selected item as a manual AOE weapon override."
-        )));
+        this.addButton.setTooltip(Tooltip.create(this.addDescription));
         this.addRenderableWidget(this.addButton);
 
         this.addRenderableWidget(Button.builder(Component.literal("Done"), button -> returnToParent())
@@ -289,7 +308,7 @@ public final class ItemSelectorScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int top = (this.height - PANEL_HEIGHT) / 2;
-        graphics.drawCenteredString(this.font, "Select AOE Weapon", this.width / 2, top + 8, 0xFFFFFFFF);
+        graphics.drawCenteredString(this.font, this.selectorTitle, this.width / 2, top + 8, 0xFFFFFFFF);
         renderList(graphics, mouseX, mouseY);
         renderPreview(graphics);
     }
@@ -428,8 +447,6 @@ public final class ItemSelectorScreen extends Screen {
     }
 
     private void rememberState() {
-        rememberedSearch = this.searchText;
-        rememberedScroll = this.scrollOffset;
     }
 
     private void returnToParent() {

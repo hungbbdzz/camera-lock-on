@@ -19,7 +19,7 @@ gradlew.bat build
 Generated JAR:
 
 ```text
-build/libs/camera-lock-on-fabric-1.21.1-2.0.0-fabric.1.jar
+build/libs/camera-lock-on-fabric-1.21.1-2.0.1-fabric.1.jar
 ```
 
 Development client:

@@ -69,7 +69,10 @@ public final class LockOnHudRenderer {
             return;
         }
 
-        if (CameraLockOnConfig.TARGET_HUD.get() && LockOnController.isActive()) {
+        if (ThirdPersonCameraController.isVisualCameraActive()) {
+            renderThirdPersonCrosshair(graphics);
+        }
+        if (CameraLockOnConfig.TARGET_HUD.get() && LockOnController.canRenderLockedTargetInfo()) {
             renderTargetHud(graphics, minecraft, player);
         }
         if (CameraLockOnConfig.AUTO_LOCK_INDICATOR.get()) {
@@ -79,6 +82,30 @@ public final class LockOnHudRenderer {
             renderAttackerIndicators(graphics, minecraft, player);
         }
         renderTemporaryPin(graphics, minecraft);
+    }
+
+    private static void renderThirdPersonCrosshair(GuiGraphics graphics) {
+        ThirdPersonAimResolver.CursorPoint cursor = ThirdPersonAimResolver.resolveCursor();
+        if (!cursor.visible()) return;
+
+        if (cursor.showCameraCenter()) {
+            int centerX = graphics.guiWidth() / 2;
+            int centerY = graphics.guiHeight() / 2;
+            drawCrosshair(graphics, centerX, centerY, 3, 0x88000000, 0xFF9AA3AE);
+        }
+
+        int color = cursor.blocked() ? 0xFFFF5A45 : 0xFFFFFFFF;
+        drawCrosshair(graphics, cursor.x(), cursor.y(), 5, 0xAA000000, color);
+    }
+
+    private static void drawCrosshair(
+            GuiGraphics graphics, int x, int y, int radius, int shadow, int color
+    ) {
+        graphics.fill(x - radius, y, x + radius + 1, y + 1, shadow);
+        graphics.fill(x, y - radius, x + 1, y + radius + 1, shadow);
+        int inner = Math.max(1, radius - 1);
+        graphics.fill(x - inner, y, x + inner + 1, y + 1, color);
+        graphics.fill(x, y - inner, x + 1, y + inner + 1, color);
     }
 
     private static void renderTargetHud(
