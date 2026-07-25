@@ -2,7 +2,7 @@
 
 Camera Lock-On is a lightweight, highly configurable client-side target lock-on mod for Minecraft.
 
-It adds action-game-style targeting without changing attack reach, damage, entity AI, or server-side combat rules. Version 2.0 introduces automatic acquisition, intelligent retargeting, entity-specific aim points, a compact combat HUD, attacker awareness, and experimental sweep/AOE assistance.
+It adds action-game-style targeting without changing attack reach, damage, entity AI, or server-side combat rules. Version 2.0.1 expands the mod with projectile assistance, prediction, configurable third-person camera support, improved camera smoothing, and stricter line-of-sight controls.
 
 ## Supported Platforms
 
@@ -14,7 +14,7 @@ It adds action-game-style targeting without changing attack reach, damage, entit
 
 Camera Lock-On is client-side only. The server normally does not need the mod.
 
-Camera rotation automation may be restricted by competitive servers or anti-cheat systems. Check the server rules before using it in multiplayer.
+Camera rotation, projectile assistance, persistent target information, or other automation may be restricted by competitive servers or anti-cheat systems. Check the server rules before using these features in multiplayer.
 
 ## Requirements
 
@@ -42,101 +42,132 @@ Camera rotation automation may be restricted by competitive servers or anti-chea
 
 1. Face a nearby living entity.
 2. Press Middle Mouse Button to toggle lock-on.
-3. In Smart Lock, move the mouse to look around temporarily.
-4. Stop moving the mouse and the camera smoothly returns to the target.
+3. Move the mouse while Temporary Free Look is enabled to look away temporarily.
+4. Stop moving the mouse and the camera or player aim smoothly returns to the target.
 5. Press the lock key again to unlock.
 6. Open the mod configuration from the Mods screen or assign the dedicated configuration keybind.
 
-Auto Lock is enabled by default. Keeping the crosshair on a valid entity hitbox briefly can acquire it automatically.
+Auto Lock is enabled by default. Keeping the active cursor or raycast on a valid entity briefly can acquire it automatically.
 
 ## Default Controls
 
 | Action | Default |
 |---|---|
 | Toggle Camera Lock-On | Middle Mouse Button |
-| Switch Target (Next) | Tab |
-| Switch Target (Previous) | Unbound |
-| Pin Current Target Type | Unbound |
+| Switch Target | Tab |
+| Switch Target Previous | Unbound |
 | Open Camera Lock-On Config | Unbound |
 | Toggle Auto Lock | Unbound |
-| Toggle Smart Lock | Unbound |
+| Toggle Temporary Free Look | Unbound |
 | Toggle Hostile Only | Unbound |
 | Toggle Target Mini HUD | Unbound |
+| Toggle Auto Bow Release | Unbound |
+| Toggle Auto Bow Recharge | Unbound |
+| Cycle Projectile Assist Mode | Unbound |
+| Third-Person Camera X - / X + | Unbound |
+| Third-Person Camera Y - / Y + | Unbound |
+| Third-Person Camera Z - / Z + | Unbound |
 | Cycle Target Priority | Unbound |
-| Cycle Switch Target Mode | Unbound |
 | Clear Temporary Pinned Type | Unbound |
 
 All controls can be assigned or changed in Minecraft's standard Controls menu.
 
-## Language Support
-
-Camera Lock-On includes complete built-in UI localization for:
-
-- English (`en_us`)
-- Simplified Chinese (`zh_cn`)
-- Russian (`ru_ru`)
-- Spanish (`es_es`)
-- German (`de_de`)
-- Japanese (`ja_jp`)
-
-All UI screens, tabs, buttons, tooltips, dialogs, and options adapt automatically to Minecraft's language setting.
-
 ## Main Features
 
-- Smart Lock and Hard Lock camera behavior
 - Manual lock, Auto Lock, target switching, and Auto Retarget
+- Temporary Free Look and configurable camera steering
 - Searchable vanilla and modded living-entity selector
-- 3D entity preview with automatic and manual rotation
 - Any Entity, Selected Type Only, and Prefer Selected Type filters
 - Any Entity, Same Type First, and Same Type Only retarget rules
 - Global and per-entity aim-point editors
-- Searchable per-entity aim override manager
-- Target blacklist with compact removal controls
-- Draggable mini combat HUD with vanilla hearts and armor icons
-- Damage-flash animation and configurable HUD transparency
+- Target blacklist and temporary target-type pinning
+- Draggable target HUD with health, armor, distance, and damage feedback
 - Off-screen attacker indicators and optional attacker auto-lock
+- Projectile weapon support and configurable modded weapon recognition
+- Projectile prediction and trajectory assistance
+- Bow auto-release and auto-recharge
+- Configurable third-person camera positions and aiming modes
+- Third-person aim-ray visualization
 - Experimental Group Aim / Sweep Assist
 - Manual AOE weapon list for modded weapons
-- Configurable reticle, sounds, dead zone, suspension rules, and keybinds
+- Strict and Grace HUD line-of-sight modes
+- Responsive configuration screens, presets, tooltips, and unbound utility keybinds
 
-## Smart Lock and Hard Lock
+## Camera Lock Behavior
 
-### Smart Lock
+### Temporary Free Look
 
-Smart Lock gives direct mouse input priority. Move the mouse to look away temporarily; after input stops, the camera gently returns to the target.
+Temporary Free Look gives direct mouse input priority.
 
-This is the recommended mode for normal gameplay.
+While enabled:
 
-### Hard Lock
+- Moving the mouse temporarily releases camera steering.
+- The player can inspect the surroundings without dropping the target.
+- Camera and aim alignment return smoothly after mouse input stops.
+- Third-person Converged mode also supports temporary free movement.
 
-Hard Lock continually steers toward the target and allows less free look. It is useful when a stricter action-RPG camera is preferred.
+### Aim Strength
+
+First-person and third-person steering use separate strength settings.
+
+- First-Person Pull defaults to `1.20x`.
+- Third-Person Pull defaults to the stable third-person value.
+- Higher values return to the target faster.
+- Excessively high values can look less smooth or shake when the target is very close.
 
 ### Elliptical Dead Zone
 
-Dead Zone is optional and disabled by default. It softens small camera corrections around the center of the screen.
-
-In Smart Lock, active mouse input remains the highest-priority control layer.
+Dead Zone is optional and disabled by default. It softens small corrections around the center of the screen while preserving direct mouse input priority.
 
 ## Auto Lock
 
-Auto Lock acquires an entity after the crosshair remains on its hitbox for the configured delay.
+Auto Lock acquires an entity after the selected cursor or raycast remains on its hitbox for the configured delay.
 
-Relevant settings:
+Relevant settings include:
 
-- Aim Delay — how long the crosshair must remain on the same hitbox
-- Unlock Cooldown — prevents immediate relocking after manual unlock
-- Pixel Indicator — displays one shrinking pixel box around the crosshair
+- Aim Delay
+- Unlock Cooldown
+- Pixel Indicator
+- Lock Range
+- Target Filter
+- Line of Sight
+- Cursor Mode
+- Projectile recognition
 
-The shrinking box uses the selected reticle color and flashes white when acquisition completes.
+Auto Lock respects visibility, blacklist, Hostile Only, selected entity type, temporary pin, range, and target validity.
 
-Suggested delays:
+## Line of Sight
+
+### Strict
+
+Strict is the default and safest mode.
+
+When the target becomes occluded:
+
+- Camera steering stops.
+- Player aim steering stops.
+- Target reticle and HUD information are hidden.
+- The target may remain stored internally during Lost Target Grace for smooth reacquisition.
+- Seeing the target again restores lock without exposing hidden information.
+
+### Grace HUD
+
+Grace HUD retains target information during Lost Target Grace.
+
+When the target becomes occluded:
+
+- Target name, health, distance, HUD, and reticle may remain visible.
+- Camera and player steering stop by default.
+- Optional Occluded Steering can continue following the hidden target.
+
+Occluded Steering is disabled by default and may be restricted on multiplayer servers.
+
+Safe Server forces:
 
 ```text
-Fast combat:      0.10–0.25 seconds
-Fewer accidents:  0.40–0.75 seconds
+Line of Sight: Strict
+Occluded Steering: Off
 ```
-
-Auto Lock respects range, visibility, blacklist, Hostile Only, selected entity type, temporary pin, and target validity.
 
 ## Entity Filters
 
@@ -144,71 +175,27 @@ Auto Lock respects range, visibility, blacklist, Hostile Only, selected entity t
 
 Default: OFF
 
-Enable this to ignore passive entities during normal acquisition. Keep it disabled for farming, locating animals, testing, or targeting passive modded mobs.
+Enable this to ignore passive entities during normal acquisition.
 
 ### Type Filter
 
-- Any Entity — any valid nearby living entity may be selected
-- Selected Type Only — only the selected registered entity type may be acquired
-- Prefer Selected Type — prioritizes the selected type but falls back to other valid targets
+- Any Entity
+- Selected Type Only
+- Prefer Selected Type
 
-### Selecting an Entity
+### Auto Retarget
 
-1. Open the Filter tab.
-2. Click Selected Entity.
-3. Search by translated name or registry ID, such as `Pig` or `minecraft:pig`.
-4. Click an entry to preview it.
-5. Confirm the selection.
-6. Choose Selected Type Only or Prefer Selected Type.
+- Any Entity
+- Same Type First
+- Same Type Only
 
-The selector shows A–Z results when the search box is empty, supports scrolling, remembers search and scroll position, and includes recent-selection history.
+### Target Blacklist
 
-## Auto Retarget
-
-When a target dies or becomes invalid, Auto Retarget can find a replacement.
-
-- Any Entity — choose any valid nearby target
-- Same Type First — prefer the previous target type, then fall back to normal targeting
-- Same Type Only — only choose another entity of the same type; otherwise unlock
-
-### Recommended Farming Setup
-
-For farming one mob type in a crowded area:
-
-```text
-Hostile Only: OFF
-Auto Retarget: ON
-Retarget Rule: Same Type Only
-```
-
-For the strictest behavior:
-
-```text
-Selected Entity: Pig
-Type Filter: Selected Type Only
-Retarget Rule: Same Type Only
-```
-
-This prevents a pig farm lock from jumping to nearby cows, sheep, or other mobs.
-
-## Target Blacklist
-
-Blacklisted entity types are rejected by:
-
-- Manual lock
-- Auto Lock
-- Target switching
-- Auto Retarget
-- Attacker auto-lock
-- Group Aim
-
-Use the searchable blacklist manager to add or remove registered vanilla and modded living entities.
+Blacklisted entity types are rejected by manual lock, Auto Lock, target switching, Auto Retarget, attacker auto-lock, and Group Aim.
 
 ## Aim Points
 
-### Global Presets
-
-Available global fallback presets:
+Global presets include:
 
 - Feet
 - Lower Body
@@ -217,24 +204,7 @@ Available global fallback presets:
 - Head
 - Custom
 
-### Per-Entity Aim Overrides
-
-A saved entity-specific point always has higher priority:
-
-```text
-Per-Entity Override
-→ Global Preset / Global Custom Point
-→ Center fallback
-```
-
-Example uses:
-
-- Zombie — head or upper chest
-- Spider — low body center
-- Enderman — upper torso
-- Small modded mob — a stable visible hitbox area
-
-Open `Filter → Aim Overrides` to search, add, edit, or remove saved points.
+Per-entity overrides take priority over the global fallback.
 
 Saved at:
 
@@ -242,95 +212,130 @@ Saved at:
 config/camera_lockon/entity_aim_points.json
 ```
 
-Per-entity points remain exact unless Allow Group Aim Offset is enabled for that entity.
+Multipart aiming is disabled by default. It can be enabled for entities with unusual multipart hitboxes.
+
+## Projectile Assistance
+
+Projectile assistance can recognize vanilla ranged weapons and manually registered modded weapons.
+
+Supported features include:
+
+- Projectile target prediction
+- Target movement lead
+- Configurable projectile assist modes
+- Bow auto-release
+- Bow auto-recharge
+- Trajectory visualization
+- Multipart target selection
+- Adaptive aim calibration
+- Manual projectile weapon recognition
+
+### Modded Projectile Weapons
+
+Open:
+
+```text
+Projectile Settings → Manage Projectile Weapons
+```
+
+Search by translated item name or registry ID, then add the item to the projectile weapon list.
+
+Saved at:
+
+```text
+config/camera_lockon/projectile_weapons.json
+```
+
+Adding an item classifies it as a projectile weapon for compatible assistance features. It does not automatically guarantee correct gravity, velocity, charge timing, or custom firing behavior for every modded weapon.
+
+### Bow Assistance
+
+Auto Release and Auto Recharge are separate options and separate keybinds.
+
+- Auto Release releases the bow at the configured charge point.
+- Auto Recharge begins drawing the next shot when the required input and ammunition conditions are met.
+- Both options can be enabled or disabled independently.
+
+## Third-Person Camera
+
+Third-person mode can be configured as:
+
+- Off
+- Always On
+- Projectile
+
+Camera positions use independent configurable slots and support horizontal, vertical, and distance offsets.
+
+### Contextual
+
+Contextual keeps the camera free.
+
+- Lock-on controls the player's real aim direction.
+- The camera is not forced toward the target.
+- Temporary Free Look and realignment transitions are smoothed.
+- Dual cursor can retain center-cursor Auto Lock.
+- Dynamic cursor can follow the real player raycast.
+
+### Converged
+
+Converged is the only third-person aim mode that forces the camera toward the locked target.
+
+- Camera, target aim point, and player aim attempt to converge.
+- Camera movement is smoothed.
+- Close-target correction is limited to reduce shaking.
+- Temporary Free Look can temporarily release the camera.
+- Occlusion and camera collision can prevent perfect convergence.
+
+Because the camera, player eyes, and projectile origin are physically separated, perfect cursor and projectile alignment is not possible in every third-person situation.
+
+### Aim Ray
+
+Aim Ray can be configured as:
+
+- Off
+- Projectile Only
+- Always
+
+The ray displays the player's real aiming direction and is especially useful when the free camera direction differs from the projectile direction.
 
 ## Target Mini HUD
 
-Open:
+The target HUD can display:
+
+- Target name
+- Health
+- Distance
+- Armor
+- Registry ID
+- Source mod name
+- Damage flash
+
+Registry ID and source mod name are disabled by default.
+
+The HUD position can be adjusted from:
 
 ```text
 HUD → Adjust HUD Position
 ```
 
-Drag the highlighted card, then click outside it to apply.
-
-Available information:
-
-- Target name
-- Health
-- Distance
-- Armor points
-- Registry ID
-- Source mod name
-- Damage flash
-
-Registry ID and source mod name are disabled by default to keep the card compact.
-
-### Health Display
-
-For targets with up to 40 maximum health:
-
-- Vanilla heart sprites are used
-- Up to ten hearts appear per row
-- The second row overlaps tightly
-- Heart containers blink when damage is received
-
-For targets above 40 maximum health:
-
-```text
-♥ current / maximum
-```
-
-### Armor Display
-
-For armor values up to 20, vanilla full and half armor sprites are shown.
-
-Above 20, the HUD uses one armor icon plus the numeric armor value.
-
-### Transparency
-
-HUD background opacity affects only the dark panel. Text, hearts, armor icons, and combat information remain fully visible.
-
 ## Attacker Awareness
 
-When an entity attacks from outside the current view, Camera Lock-On can display a directional warning instead of immediately forcing the camera around.
+When an entity attacks from outside the current view, Camera Lock-On can display a directional warning or acquire the attacker.
 
-Response modes:
+Response modes include:
 
 - Off
 - Indicator Only
 - Lock After Hits
 - Lock Immediately
 
-Repeated-hit locking supports configurable hit count, hit window, maximum range, target replacement, protection time, indicator count, and same-side grouping.
-
-When several attackers are active, the system ranks them using recency, repeated hits, estimated damage, distance, and visibility.
-
 ## Group Aim / Sweep Assist
 
 Group Aim is experimental and disabled by default.
 
-It keeps a primary target but shifts the effective aim point toward a nearby cluster of valid entities. This can help sword sweeps or other AOE attacks connect with several targets.
+It keeps a primary target while shifting the effective aim point toward a nearby cluster of valid entities. This can help sword sweeps or other AOE attacks connect with several targets.
 
-Settings include:
-
-- Activation mode
-- Same-type grouping
-- Group radius
-- Maximum group distance
-- Maximum targets
-- Aim strength
-- Maximum offset
-
-### AOE Weapon Recognition
-
-Depending on the loader and Minecraft version, Sweep Weapons mode recognizes supported sword-sweep weapons through the available loader API.
-
-Modded weapons can also be added manually:
-
-```text
-Group → Manual AOE Weapons
-```
+Modded AOE weapons can be registered manually.
 
 Saved at:
 
@@ -338,126 +343,89 @@ Saved at:
 config/camera_lockon/aoe_weapons.json
 ```
 
-## Recommended Presets
+## Presets
 
-### General Exploration
+Presets can save and restore groups of settings including:
 
-```text
-Lock Mode: Smart
-Auto Lock: ON
-Hostile Only: OFF
-Auto Retarget: ON
-Retarget Rule: Same Type First
-Dead Zone: OFF
-```
+- Camera steering
+- First-person and third-person aim strength
+- Third-person camera mode and position
+- Aim Ray
+- Projectile assistance
+- HUD
+- Filters
+- Line-of-sight mode
+- Occluded Steering
+- Group Aim
 
-### Hostile Combat
+Reset Defaults restores the current release defaults.
 
-```text
-Hostile Only: ON
-Auto Lock: ON
-Auto Retarget: ON
-Attacker Response: Indicator Only
-```
+Safe Server disables or restricts higher-risk automation and hidden-target behavior.
 
-### Searching for One Entity Type
+## Language Support
 
-```text
-Selected Entity: desired entity
-Type Filter: Prefer Selected Type
-```
+Camera Lock-On includes built-in UI localization for:
 
-### Strict Action Camera
-
-```text
-Lock Mode: Hard
-Dead Zone: OFF
-Auto Lock: ON
-```
+- English
+- Simplified Chinese
+- Russian
+- Spanish
+- German
+- Japanese
 
 ## Configuration Files
-
-Additional structured data:
 
 ```text
 config/camera_lockon/entity_aim_points.json
 config/camera_lockon/aoe_weapons.json
+config/camera_lockon/projectile_weapons.json
 ```
 
-The main configuration backend depends on the selected mod loader, but the in-game options and behavior are intended to remain consistent across supported versions.
+The main configuration backend depends on the selected loader, but the in-game settings are intended to remain consistent across supported versions.
 
 ## Known Limitations
 
 - Only loaded and client-tracked entities can be selected.
 - Unloaded chunks cannot be searched.
-- New acquisition requires line of sight.
-- Entity preview requires an active world.
-- Some modded entities may not support temporary preview creation.
-- Some modded weapons require manual AOE registration.
-- Not every mod-specific animation system runs in preview screens.
+- New target acquisition requires line of sight.
+- Third-person camera, player-eye ray, and projectile origin cannot align perfectly in every situation.
+- Camera collision and very close targets may reduce convergence accuracy.
+- Some modded projectile weapons require manual registration.
+- Custom weapon mechanics may require weapon-specific projectile profiles.
+- Some modded entities may not support preview creation.
 - The mod does not increase reach, damage, or server-side hit detection.
-- Group Aim may aim between entities because it optimizes a cluster rather than one exact hitbox.
-- Camera automation may be restricted by some multiplayer anti-cheat systems.
+- Camera automation and hidden-target information may be restricted by multiplayer servers.
 
 ## Changelog
 
+### 2.0.1 — Projectile & Third-Person Update
+
+- Added projectile weapon and prediction support.
+- Added configurable recognition for modded ranged weapons.
+- Added bow auto-release and auto-recharge assistance.
+- Added configurable third-person camera positions and aim modes.
+- Added third-person aim ray support.
+- Added separate first-person and third-person camera strength controls.
+- Added Strict and Grace HUD line-of-sight modes.
+- Added Safe Server enforcement for strict visibility behavior.
+- Improved camera smoothing, free-look transitions, target switching, and close-range stability.
+- Improved responsive configuration and preset screens.
+- Added additional unbound utility keybinds.
+- Fixed Forge camera steering and duplicate rotation updates.
+- Fixed configuration blur, duplicate widgets, and stale-frame rendering issues.
+
 ### 2.0.0 — Major Feature Update
 
-#### Added
-
-- Smart Lock and Hard Lock behavior
-- Auto Lock with configurable delay and shrinking pixel acquisition box
-- Manual target switching and intelligent Auto Retarget
-- Same Type First and Same Type Only retarget rules
-- Selected Type Only and Prefer Selected Type filters
-- Searchable vanilla and modded entity selector with 3D preview
-- Global and per-entity aim-point editors
-- Searchable per-entity aim override manager
-- Target blacklist manager
-- Temporary target-type pinning
-- Lock-on-hit modes
-- Draggable combat HUD
-- Vanilla heart and armor rendering
-- Damage-flash animation
-- Off-screen attacker awareness and attacker auto-lock
-- Group Aim / Sweep Assist
-- Manual AOE weapon manager
-- Dedicated config keybind and additional unbound combat keybinds
-- Full UI localization for English, Chinese, Russian, Spanish, German, and Japanese
-- Tooltips, confirmation screens, and translucent configuration UI
-- Fabric 1.21.1 support
-- Forge 1.20.1 support
-- NeoForge 1.21.1 support
-
-#### Changed
-
-- Default lock range increased to 36 blocks
-- Auto Lock now defaults ON
-- Hostile Only now defaults OFF
-- Dead Zone now defaults OFF
-- Registry ID and source mod name default OFF in the HUD
-- Smart Lock now has priority over Dead Zone during direct mouse input
-- Low-health HUD cards resize dynamically
-- Second heart rows overlap more tightly
-- Common targeting settings are easier to access
-- Secondary keybinds default to unbound
-- Mod metadata no longer references Zenless Zone Zero
-- License for version 2.0.0 and later changed to All Rights Reserved
-
-#### Fixed
-
-- Empty entity-list rendering
-- Dynamic entity-search refresh
-- Auto Lock hitbox detection edge cases
-- UI layers being hidden behind model previews
-- HUD distance leaving the card
-- Duplicate target panels
-- Blacklist and selector footer overlap
-- Aim marker being hidden behind the preview entity
-- Preview head rotation appearing detached from the body
-- Dead Zone overpowering Smart Lock input
-- Configuration panel exceeding the visible screen at larger GUI scales
-- Fabric Middle Mouse Button lock/unlock input
+- Added Temporary Free Look and strict camera-lock behavior.
+- Added Auto Lock with configurable delay.
+- Added manual target switching and intelligent Auto Retarget.
+- Added entity filters, blacklist, and per-entity aim points.
+- Added draggable combat HUD with health and armor rendering.
+- Added off-screen attacker awareness.
+- Added Group Aim / Sweep Assist.
+- Added manual AOE weapon recognition.
+- Added Fabric 1.21.1, NeoForge 1.21.1, and Forge 1.20.1 support.
+- Added built-in localization for six languages.
 
 ## License
 
