@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 set -eu
-GRADLE_VERSION="8.11.1"
+GRADLE_VERSION="9.2.1"
 GRADLE_DIST="gradle-${GRADLE_VERSION}-bin.zip"
 GRADLE_URL="https://services.gradle.org/distributions/${GRADLE_DIST}"
 CACHE_ROOT="${HOME}/.gradle/camera-lockon-distributions"
