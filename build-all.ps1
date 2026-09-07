@@ -7,8 +7,7 @@ $WorkspaceParent = Split-Path -Parent $Root
 # C:\Users\hunga\Documents\Coder\Minecraft\myMod\mods
 $OutputDirectory = Join-Path $WorkspaceParent 'mods'
 
-# NeoForge currently writes its release JAR into this staging directory.
-$NeoForgeStagingDirectory = Join-Path $Root 'mods'
+# NeoForge writes its release JAR into build/libs, same as Fabric and Forge.
 
 $OriginalJavaHome = $env:JAVA_HOME
 $OriginalPath = $env:Path
@@ -97,31 +96,59 @@ function Copy-ReleaseJar(
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
 try {
-    Invoke-Build 'NeoForge 1.21.1' 'neoforge-1.21.1' 'JAVA21_HOME' 'JDK 21'
-    Invoke-Build 'Fabric 1.21.1' 'fabric-1.21.1' 'JAVA21_HOME' 'JDK 21'
-    Invoke-Build 'Forge 1.20.1' 'forge-1.20.1' 'JAVA17_HOME' 'JDK 17'
+    Invoke-Build 'NeoForge 1.21.1'  'neoforge-1.21.1'  'JAVA21_HOME' 'JDK 21'
+    Invoke-Build 'NeoForge 1.21.4'  'neoforge-1.21.4'  'JAVA21_HOME' 'JDK 21'
+    Invoke-Build 'NeoForge 1.21.11' 'neoforge-1.21.11' 'JAVA21_HOME' 'JDK 21'
+    Invoke-Build 'Fabric 1.21.1'    'fabric-1.21.1'    'JAVA21_HOME' 'JDK 21'
+    Invoke-Build 'Fabric 1.21.4'    'fabric-1.21.4'    'JAVA21_HOME' 'JDK 21'
+    Invoke-Build 'Fabric 1.21.11'   'fabric-1.21.11'   'JAVA21_HOME' 'JDK 21'
+    Invoke-Build 'Forge 1.20.1'     'forge-1.20.1'     'JAVA17_HOME' 'JDK 17'
 
-    $neoForgeJar = Get-LatestReleaseJar `
-        $NeoForgeStagingDirectory `
+    $neoForge121Jar = Get-LatestReleaseJar `
+        (Join-Path $Root 'neoforge-1.21.1\build\libs') `
         'camera_lockon-1.21.1-neoforge-*.jar' `
         'NeoForge 1.21.1'
 
-    $fabricJar = Get-LatestReleaseJar `
+    $neoForge1214Jar = Get-LatestReleaseJar `
+        (Join-Path $Root 'neoforge-1.21.4\build\libs') `
+        'camera_lockon-1.21.4-neoforge-*.jar' `
+        'NeoForge 1.21.4'
+
+    $neoForge12111Jar = Get-LatestReleaseJar `
+        (Join-Path $Root 'neoforge-1.21.11\build\libs') `
+        'camera_lockon-1.21.11-neoforge-*.jar' `
+        'NeoForge 1.21.11'
+
+    $fabric121Jar = Get-LatestReleaseJar `
         (Join-Path $Root 'fabric-1.21.1\build\libs') `
         'camera-lock-on-fabric-1.21.1-*.jar' `
         'Fabric 1.21.1'
+
+    $fabric1214Jar = Get-LatestReleaseJar `
+        (Join-Path $Root 'fabric-1.21.4\build\libs') `
+        'camera-lock-on-fabric-1.21.4-*.jar' `
+        'Fabric 1.21.4'
+
+    $fabric12111Jar = Get-LatestReleaseJar `
+        (Join-Path $Root 'fabric-1.21.11\build\libs') `
+        'camera-lock-on-fabric-1.21.11-*.jar' `
+        'Fabric 1.21.11'
 
     $forgeJar = Get-LatestReleaseJar `
         (Join-Path $Root 'forge-1.20.1\build\libs') `
         'camera-lock-on-forge-1.20.1-*.jar' `
         'Forge 1.20.1'
 
-    Copy-ReleaseJar $neoForgeJar 'NeoForge 1.21.1'
-    Copy-ReleaseJar $fabricJar 'Fabric 1.21.1'
-    Copy-ReleaseJar $forgeJar 'Forge 1.20.1'
+    Copy-ReleaseJar $neoForge121Jar   'NeoForge 1.21.1'
+    Copy-ReleaseJar $neoForge1214Jar  'NeoForge 1.21.4'
+    Copy-ReleaseJar $neoForge12111Jar 'NeoForge 1.21.11'
+    Copy-ReleaseJar $fabric121Jar     'Fabric 1.21.1'
+    Copy-ReleaseJar $fabric1214Jar    'Fabric 1.21.4'
+    Copy-ReleaseJar $fabric12111Jar   'Fabric 1.21.11'
+    Copy-ReleaseJar $forgeJar         'Forge 1.20.1'
 
     Write-Host ""
-    Write-Host 'All three builds completed successfully.' -ForegroundColor Green
+    Write-Host 'All 7 builds completed successfully.' -ForegroundColor Green
     Write-Host "Release JAR directory: $OutputDirectory" -ForegroundColor Cyan
 }
 finally {

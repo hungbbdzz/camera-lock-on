@@ -25,7 +25,6 @@ neoForge {
     runs {
         client {
             client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'camera_lockon'
         }
     }
 
@@ -39,9 +38,6 @@ neoForge {
 dependencies {
 }
 
-jar {
-    destinationDirectory = file("../mods")
-}
 
 tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [

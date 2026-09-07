@@ -6,11 +6,15 @@ It adds action-game-style targeting without changing attack reach, damage, entit
 
 ## Supported Platforms
 
-| Minecraft | Mod Loader | Java |
-|---|---|---|
-| 1.21.1 | NeoForge | Java 21 |
-| 1.21.1 | Fabric | Java 21 |
-| 1.20.1 | Forge | Java 17 |
+| Minecraft | Mod Loader | Java | Subproject Directory |
+|---|---|---|---|
+| 1.21.11 | NeoForge | Java 21 | `neoforge-1.21.11` |
+| 1.21.11 | Fabric | Java 21 | `fabric-1.21.11` |
+| 1.21.4 | NeoForge | Java 21 | `neoforge-1.21.4` |
+| 1.21.4 | Fabric | Java 21 | `fabric-1.21.4` |
+| 1.21.1 | NeoForge | Java 21 | `neoforge-1.21.1` |
+| 1.21.1 | Fabric | Java 21 | `fabric-1.21.1` |
+| 1.20.1 | Forge | Java 17 | `forge-1.20.1` |
 
 Camera Lock-On is client-side only. The server normally does not need the mod.
 
@@ -18,25 +22,8 @@ Camera rotation, projectile assistance, persistent target information, or other 
 
 ## Requirements
 
-### NeoForge 1.21.1
-
-- Minecraft 1.21.1
-- NeoForge 21.1.65 or newer within the supported 21.1 range
-- Java 21
-
-### Fabric 1.21.1
-
-- Minecraft 1.21.1
-- Fabric Loader
-- Fabric API
-- Java 21
-- Mod Menu is optional
-
-### Forge 1.20.1
-
-- Minecraft 1.20.1
-- Forge for Minecraft 1.20.1
-- Java 17
+- **Minecraft 1.21.11 / 1.21.4 / 1.21.1**: Java 21, NeoForge or Fabric (with Fabric API and Fabric Loader >= 0.17.3 for 1.21.11). Mod Menu is optional.
+- **Minecraft 1.20.1**: Java 17, Minecraft Forge.
 
 ## Quick Start
 
@@ -400,6 +387,7 @@ The main configuration backend depends on the selected loader, but the in-game s
 
 ### 2.0.1 — Projectile & Third-Person Update
 
+- Added support for Minecraft 1.21.4 and 1.21.11 ("Mounts of Mayhem") on both Fabric and NeoForge.
 - Added projectile weapon and prediction support.
 - Added configurable recognition for modded ranged weapons.
 - Added bow auto-release and auto-recharge assistance.

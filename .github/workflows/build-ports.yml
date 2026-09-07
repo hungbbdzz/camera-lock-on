@@ -23,7 +23,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: camera-lock-on-neoforge-1.21.1
-          path: mods/*.jar
+          path: neoforge-1.21.1/build/libs/*.jar
 
   fabric-1-21-1:
     runs-on: ubuntu-latest
@@ -44,6 +44,44 @@ jobs:
           name: camera-lock-on-fabric-1.21.1
           path: fabric-1.21.1/build/libs/*.jar
 
+  neoforge-1-21-4:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neoforge-1.21.4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camera-lock-on-neoforge-1.21.4
+          path: neoforge-1.21.4/build/libs/*.jar
+
+  fabric-1-21-4:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fabric-1.21.4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camera-lock-on-fabric-1.21.4
+          path: fabric-1.21.4/build/libs/*.jar
+
   forge-1-20-1:
     runs-on: ubuntu-latest
     defaults:
@@ -62,3 +100,42 @@ jobs:
         with:
           name: camera-lock-on-forge-1.20.1
           path: forge-1.20.1/build/libs/*.jar
+
+  neoforge-1-21-11:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neoforge-1.21.11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camera-lock-on-neoforge-1.21.11
+          path: neoforge-1.21.11/build/libs/*.jar
+
+  fabric-1-21-11:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fabric-1.21.11
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew build --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: camera-lock-on-fabric-1.21.11
+          path: fabric-1.21.11/build/libs/*.jar
+
