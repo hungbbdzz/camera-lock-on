@@ -42,9 +42,9 @@ public final class CameraLockOn implements ClientModInitializer {
                 Minecraft mc = Minecraft.getInstance();
                 Camera camera = mc.gameRenderer.getMainCamera();
                 float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+                LockOnController.renderReticle(poseStack, camera, partialTick);
                 ThirdPersonAimRayRenderer.render(poseStack, camera, partialTick);
                 ProjectileTrajectoryRenderer.render(poseStack, camera, partialTick);
-                LockOnController.renderReticle(poseStack, camera, partialTick);
             }
         });
 

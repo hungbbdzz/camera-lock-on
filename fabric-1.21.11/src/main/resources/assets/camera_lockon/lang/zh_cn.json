@@ -354,5 +354,8 @@
   "gui.camera_lockon.camera.distance_offset.tooltip": "让相机更靠近或远离玩家。",
   "gui.camera_lockon.camera.custom_editor.tooltip": "打开此相机位置的可视化拖动编辑器。",
   "gui.camera_lockon.camera.mirror.tooltip": "将水平相机偏移翻转到另一侧肩膀。",
-  "gui.camera_lockon.camera.custom_drag.tooltip": "在预览区域内拖动，以水平和垂直调整玩家构图。"
+  "gui.camera_lockon.camera.custom_drag.tooltip": "在预览区域内拖动，以水平和垂直调整玩家构图。",
+  "key.category.camera_lockon.general": "Camera Lock-On 视角锁定",
+  "gui.camera_lockon.projectile_settings.projectile_weapons": "管理远程弹道武器",
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "添加或移除用于弹道预判与辅助瞄准的原版或模组远程武器。"
 }

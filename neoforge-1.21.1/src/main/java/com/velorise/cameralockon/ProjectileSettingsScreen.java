@@ -28,6 +28,9 @@ public final class ProjectileSettingsScreen extends Screen {
     private int maxScroll;
     private int contentTop;
     private int contentVisibleHeight;
+    private int scrollbarLeft;
+    private boolean draggingScrollbar;
+    private int scrollbarGrabOffset;
 
     public ProjectileSettingsScreen(Screen parent) {
         super(Component.translatable("gui.camera_lockon.projectile_settings.title"));
@@ -48,11 +51,8 @@ public final class ProjectileSettingsScreen extends Screen {
         this.maxScroll = Math.max(0, contentHeight - this.contentVisibleHeight);
         this.scrollOffset = Mth.clamp(this.scrollOffset, 0, this.maxScroll);
 
+        this.scrollbarLeft = left + PANEL_WIDTH - 10;
         buildContent(x);
-
-        if (this.maxScroll > 0) {
-            this.addRenderableWidget(new ScrollBar(left + PANEL_WIDTH - 10, this.contentTop, 6, this.contentVisibleHeight));
-        }
 
         Button done = Button.builder(Component.translatable("gui.camera_lockon.button.done"), button -> closeAndSave())
                 .bounds(left + 114, top + panelHeight - 24, 102, 18).build();
@@ -96,7 +96,7 @@ public final class ProjectileSettingsScreen extends Screen {
                     CameraLockOnConfig.BOW_AIM_REFERENCE.set(next.name());
                 }); y += ROW_STEP;
 
-        addActionRow(x, y, CONTENT_WIDTH, Component.literal("Manage Projectile Weapons"),
+        addActionRow(x, y, CONTENT_WIDTH, Component.translatable("gui.camera_lockon.projectile_settings.projectile_weapons"),
                 "gui.camera_lockon.projectile_settings.projectile_weapons",
                 () -> { if (this.minecraft != null) this.minecraft.setScreen(new ProjectileWeaponManagerScreen(this)); }); y += ROW_STEP;
 
@@ -287,25 +287,93 @@ public final class ProjectileSettingsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
         int top = (this.height - currentPanelHeight()) / 2;
         graphics.drawCenteredString(this.font, this.title, this.width / 2, top + 10, 0xFFFFFFFF);
+        renderScrollbar(graphics);
     }
 
-    private final class ScrollBar extends AbstractSliderButton {
-        ScrollBar(int x, int y, int width, int height) {
-            super(x, y, width, height, Component.empty(), maxScroll <= 0 ? 0.0D : (double) scrollOffset / (double) maxScroll);
-            updateMessage();
-        }
+    private void renderScrollbar(GuiGraphics graphics) {
+        if (this.maxScroll <= 0) return;
+        graphics.fill(this.scrollbarLeft, this.contentTop, this.scrollbarLeft + 6,
+                this.contentTop + this.contentVisibleHeight, 0xFF151515);
+        int thumbH = thumbHeight();
+        int thumbY = thumbTop();
+        graphics.fill(this.scrollbarLeft + 1, thumbY, this.scrollbarLeft + 5,
+                thumbY + thumbH, 0xFF9A9A9A);
+    }
 
-        @Override
-        protected void updateMessage() {
-            setMessage(Component.empty());
-        }
+    private int thumbHeight() {
+        int total = Math.max(1, this.contentVisibleHeight + this.maxScroll);
+        return Math.max(18, this.contentVisibleHeight * this.contentVisibleHeight / total);
+    }
 
-        @Override
-        protected void applyValue() {
-            if (maxScroll <= 0) return;
-            scrollOffset = Mth.clamp((int) Math.round(this.value * maxScroll), 0, maxScroll);
+    private int thumbTop() {
+        if (this.maxScroll <= 0) return this.contentTop;
+        int track = Math.max(1, this.contentVisibleHeight - thumbHeight());
+        return this.contentTop + (int) Math.round(track * (this.scrollOffset / (double) this.maxScroll));
+    }
+
+    private boolean isInsideScrollbar(double mouseX, double mouseY) {
+        return this.maxScroll > 0
+                && mouseX >= this.scrollbarLeft && mouseX <= this.scrollbarLeft + 6
+                && mouseY >= this.contentTop && mouseY <= this.contentTop + this.contentVisibleHeight;
+    }
+
+    private void updateScrollFromMouse(double mouseY) {
+        int height = thumbHeight();
+        int track = Math.max(1, this.contentVisibleHeight - height);
+        double fraction = Mth.clamp((mouseY - this.contentTop - this.scrollbarGrabOffset) / track, 0.0D, 1.0D);
+        int next = Mth.clamp((int) Math.round(fraction * this.maxScroll), 0, this.maxScroll);
+        if (next != this.scrollOffset) {
+            this.scrollOffset = next;
             rebuildWidgets();
         }
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && isInsideScrollbar(mouseX, mouseY)) {
+            int top = thumbTop();
+            int height = thumbHeight();
+            if (mouseY >= top && mouseY <= top + height) {
+                this.scrollbarGrabOffset = (int) mouseY - top;
+            } else {
+                this.scrollbarGrabOffset = height / 2;
+                updateScrollFromMouse(mouseY);
+            }
+            this.draggingScrollbar = true;
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && this.draggingScrollbar) {
+            updateScrollFromMouse(mouseY);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0 && this.draggingScrollbar) {
+            this.draggingScrollbar = false;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.maxScroll > 0 && scrollY != 0.0D) {
+            int next = Mth.clamp(this.scrollOffset - (int) Math.signum(scrollY) * ROW_STEP, 0, this.maxScroll);
+            if (next != this.scrollOffset) {
+                this.scrollOffset = next;
+                rebuildWidgets();
+            }
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     private static final class ValueSlider extends AbstractSliderButton {

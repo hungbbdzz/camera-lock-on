@@ -354,5 +354,8 @@
   "gui.camera_lockon.camera.distance_offset.tooltip": "Acerca o aleja la cámara del jugador.",
   "gui.camera_lockon.camera.custom_editor.tooltip": "Abre el editor visual de arrastre para esta posición de cámara.",
   "gui.camera_lockon.camera.mirror.tooltip": "Invierte el desplazamiento horizontal de la cámara al hombro opuesto.",
-  "gui.camera_lockon.camera.custom_drag.tooltip": "Arrastra dentro de la vista previa para mover el encuadre del jugador horizontal y verticalmente."
+  "gui.camera_lockon.camera.custom_drag.tooltip": "Arrastra dentro de la vista previa para mover el encuadre del jugador horizontal y verticalmente.",
+  "key.category.camera_lockon.general": "Camera Lock-On",
+  "gui.camera_lockon.projectile_settings.projectile_weapons": "Gestionar armas de proyectiles",
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Añade o elimina armas a distancia vanilla o de mods para la predicción y asistencia de proyectiles."
 }

@@ -134,13 +134,13 @@ public final class ForgeClientEvents {
             }
 
             PoseStack poseStack = event.getPoseStack();
-            ThirdPersonAimRayRenderer.render(poseStack, event.getCamera(), event.getPartialTick());
-            ProjectileTrajectoryRenderer.render(poseStack, event.getCamera(), event.getPartialTick());
             LockOnController.renderReticle(
                     poseStack,
                     event.getCamera(),
                     event.getPartialTick()
             );
+            ThirdPersonAimRayRenderer.render(poseStack, event.getCamera(), event.getPartialTick());
+            ProjectileTrajectoryRenderer.render(poseStack, event.getCamera(), event.getPartialTick());
         }
 
         @SubscribeEvent

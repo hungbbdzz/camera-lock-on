@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Camera.class)
 public abstract class CameraPositionMixin {
     @Shadow protected abstract void setPosition(double x, double y, double z);
+    @Shadow protected abstract void setRotation(float yaw, float pitch);
     @Shadow public abstract Vec3 getPosition();
 
     @Inject(method = "setup", at = @At("RETURN"))
@@ -34,6 +35,14 @@ public abstract class CameraPositionMixin {
         Vec3 adjusted = ThirdPersonCameraController.apply(
                 entity, getPosition(), partialTick);
         setPosition(adjusted.x, adjusted.y, adjusted.z);
+
+        if (ThirdPersonCameraController.shouldOverrideCameraRotation()) {
+            setRotation(
+                    ThirdPersonCameraController.getVisualYaw(),
+                    ThirdPersonCameraController.getVisualPitch()
+            );
+        }
+
         ThirdPersonAimResolver.alignFreeAim((Camera) (Object) this, player);
     }
 }

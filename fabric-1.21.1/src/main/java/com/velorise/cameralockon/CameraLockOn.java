@@ -37,15 +37,10 @@ public final class CameraLockOn implements ClientModInitializer {
         WorldRenderEvents.AFTER_ENTITIES.register(context -> {
             PoseStack poseStack = context.matrixStack();
             if (poseStack != null) {
-                ThirdPersonAimRayRenderer.render(poseStack, context.camera(),
-                        context.tickCounter().getGameTimeDeltaPartialTick(true));
-                ProjectileTrajectoryRenderer.render(poseStack, context.camera(),
-                        context.tickCounter().getGameTimeDeltaPartialTick(true));
-                LockOnController.renderReticle(
-                        poseStack,
-                        context.camera(),
-                        context.tickCounter().getGameTimeDeltaPartialTick(true)
-                );
+                float partialTick = context.tickCounter().getGameTimeDeltaPartialTick(true);
+                LockOnController.renderReticle(poseStack, context.camera(), partialTick);
+                ThirdPersonAimRayRenderer.render(poseStack, context.camera(), partialTick);
+                ProjectileTrajectoryRenderer.render(poseStack, context.camera(), partialTick);
             }
         });
 

@@ -354,5 +354,8 @@
   "gui.camera_lockon.camera.distance_offset.tooltip": "Приблизить или отдалить камеру от игрока.",
   "gui.camera_lockon.camera.custom_editor.tooltip": "Открыть визуальный редактор перетаскивания этой позиции камеры.",
   "gui.camera_lockon.camera.mirror.tooltip": "Отразить горизонтальное смещение камеры на другое плечо.",
-  "gui.camera_lockon.camera.custom_drag.tooltip": "Перетаскивайте внутри области предпросмотра, чтобы сдвигать кадр игрока по горизонтали и вертикали."
+  "gui.camera_lockon.camera.custom_drag.tooltip": "Перетаскивайте внутри области предпросмотра, чтобы сдвигать кадр игрока по горизонтали и вертикали.",
+  "key.category.camera_lockon.general": "Camera Lock-On Auto-Aim",
+  "gui.camera_lockon.projectile_settings.projectile_weapons": "Управление стрелковым оружием",
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Добавление или удаление стрелкового оружия из модов для упреждения и помощи при стрельбе."
 }

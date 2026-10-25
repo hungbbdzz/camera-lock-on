@@ -486,6 +486,8 @@ public final class LockOnConfigScreen extends Screen {
         CameraLockOnConfig.GROUP_AIM_SAME_TYPE_ONLY.set(CameraLockOnConfig.DEFAULT_GROUP_AIM_SAME_TYPE_ONLY);
         CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(CameraLockOnConfig.DEFAULT_PROJECTILE_ASSIST_MODE.name());
         CameraLockOnConfig.BOW_AIM_REFERENCE.set(CameraLockOnConfig.DEFAULT_BOW_AIM_REFERENCE.name());
+        CameraLockOnConfig.MULTIPART_AIM_MODE.set(CameraLockOnConfig.DEFAULT_MULTIPART_AIM_MODE.name());
+        CameraLockOnConfig.AIM_RAY_MODE.set(CameraLockOnConfig.DEFAULT_AIM_RAY_MODE.name());
         CameraLockOnConfig.PROJECTILE_PREDICTION_STRENGTH.set(CameraLockOnConfig.DEFAULT_PROJECTILE_PREDICTION_STRENGTH);
         CameraLockOnConfig.PROJECTILE_EARLY_PREDICTION.set(CameraLockOnConfig.DEFAULT_PROJECTILE_EARLY_PREDICTION);
         CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.set(CameraLockOnConfig.DEFAULT_PROJECTILE_MOTION_SMOOTHING);

@@ -155,6 +155,9 @@ public final class ThirdPersonCameraSettingsScreen extends Screen {
         Button resetButton = Button.builder(
                 Component.translatable("gui.camera_lockon.button.reset_defaults"), b -> {
             ClientFeatureStore.resetCameraDefaults();
+            CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.set(CameraLockOnConfig.DEFAULT_THIRD_PERSON_AIM_STRENGTH);
+            CameraLockOnConfig.AIM_RAY_MODE.set(CameraLockOnConfig.DEFAULT_AIM_RAY_MODE.name());
+            saveConfig();
             editingSlot = ClientFeatureStore.getActiveCameraSlot();
             rebuildWidgets();
         }).bounds(left + (footerW + footerGap) * 2,
@@ -221,8 +224,17 @@ public final class ThirdPersonCameraSettingsScreen extends Screen {
         return false;
     }
 
+    private void saveConfig() {
+        try {
+            CameraLockOnConfig.CLIENT_SPEC.save();
+        } catch (RuntimeException exception) {
+            System.err.println("[Camera Lock-On] Could not save third-person settings: " + exception.getMessage());
+        }
+    }
+
     @Override
     public void onClose() {
+        saveConfig();
         this.minecraft.setScreen(parent);
     }
 

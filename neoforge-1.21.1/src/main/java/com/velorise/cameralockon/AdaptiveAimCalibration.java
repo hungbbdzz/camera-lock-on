@@ -32,20 +32,30 @@ public final class AdaptiveAimCalibration {
         ensureLoaded(minecraft);
         if (!CameraLockOnConfig.ADAPTIVE_AIM_CALIBRATION.get() || player.level() == null) return;
         LivingEntity target = LockOnController.isActive() ? LockOnController.getLockedTarget() : null;
-        AABB scan = player.getBoundingBox().inflate(96.0D);
-        for (AbstractArrow arrow : player.level().getEntitiesOfClass(AbstractArrow.class, scan,
-                a -> a.getOwner() == player && !FLIGHTS.containsKey(a.getId()))) {
-            if (target == null || !target.isAlive()) continue;
-            Vec3 motion = new Vec3(target.getX()-target.xo, target.getY()-target.yo, target.getZ()-target.zo);
-            if (motion.lengthSqr() > 0.0025D) continue;
-            Vec3 aim = ProjectileAimCalculator.getLastResolvedAimPoint(target);
-            if (aim == null) aim = target.position().add(0, target.getBbHeight()*0.55D, 0);
-            Vec3 eye = player.getEyePosition();
-            double distance = Math.hypot(aim.x-eye.x, aim.z-eye.z);
-            double height = aim.y-eye.y;
-            Vec3 velocity = arrow.getDeltaMovement();
-            double pitch = Math.toDegrees(Math.atan2(velocity.y, Math.hypot(velocity.x, velocity.z)));
-            FLIGHTS.put(arrow.getId(), new Flight(arrow, target.getId(), aim, eye, distance, height, pitch));
+        if ((target == null || !target.isAlive()) && FLIGHTS.isEmpty()) {
+            if (saveDelay > 0 && --saveDelay == 0) save(minecraft);
+            return;
+        }
+        if (target != null && target.isAlive()) {
+            Vec3 motion = new Vec3(target.getX() - target.xo, target.getY() - target.yo, target.getZ() - target.zo);
+            if (motion.lengthSqr() <= 0.0025D) {
+                AABB launchScan = player.getBoundingBox().inflate(6.0D);
+                for (AbstractArrow arrow : player.level().getEntitiesOfClass(AbstractArrow.class, launchScan,
+                        a -> a.getOwner() == player
+                                && a.tickCount <= 3
+                                && !a.onGround()
+                                && a.getDeltaMovement().lengthSqr() > 0.04D
+                                && !FLIGHTS.containsKey(a.getId()))) {
+                    Vec3 aim = ProjectileAimCalculator.getLastResolvedAimPoint(target);
+                    if (aim == null) aim = target.position().add(0, target.getBbHeight() * 0.55D, 0);
+                    Vec3 eye = player.getEyePosition();
+                    double distance = Math.hypot(aim.x - eye.x, aim.z - eye.z);
+                    double height = aim.y - eye.y;
+                    Vec3 velocity = arrow.getDeltaMovement();
+                    double pitch = Math.toDegrees(Math.atan2(velocity.y, Math.hypot(velocity.x, velocity.z)));
+                    FLIGHTS.put(arrow.getId(), new Flight(arrow, target.getId(), aim, eye, distance, height, pitch));
+                }
+            }
         }
 
         Iterator<Flight> it = FLIGHTS.values().iterator();
@@ -98,8 +108,9 @@ public final class AdaptiveAimCalibration {
     private static boolean passedTarget(Flight f, Vec3 p) { Vec3 a=f.aimPoint.subtract(f.eye), b=p.subtract(f.eye); return b.dot(a)>a.lengthSqr()+4.0D; }
     private static LivingEntity entityAsLiving(LocalPlayer p,int id){ Entity e=p.level().getEntity(id); return e instanceof LivingEntity l?l:null; }
     private static double clamp(double v,double lo,double hi){return Math.max(lo,Math.min(hi,v));}
-    private static Path file(Minecraft m){return m.gameDirectory.toPath().resolve("config").resolve("camera_lockon-adaptive-calibration.json");}
-    private static void ensureLoaded(Minecraft m){if(loaded)return;loaded=true;Path p=file(m);if(!Files.exists(p))return;try(Reader r=Files.newBufferedReader(p)){Store s=GSON.fromJson(r,Store.class);if(s!=null&&s.samples!=null)SAMPLES.addAll(s.samples);}catch(Exception ignored){}}
+    private static Path file(Minecraft m){return m.gameDirectory.toPath().resolve("config").resolve(CameraLockOn.MODID).resolve("adaptive_calibration.json");}
+    private static Path legacyFile(Minecraft m){return m.gameDirectory.toPath().resolve("config").resolve("camera_lockon-adaptive-calibration.json");}
+    private static void ensureLoaded(Minecraft m){if(loaded)return;loaded=true;Path p=file(m);if(!Files.exists(p))p=legacyFile(m);if(!Files.exists(p))return;try(Reader r=Files.newBufferedReader(p)){Store s=GSON.fromJson(r,Store.class);if(s!=null&&s.samples!=null)SAMPLES.addAll(s.samples);}catch(Exception ignored){}}
     private static void save(Minecraft m){try{Path p=file(m);Files.createDirectories(p.getParent());try(Writer w=Files.newBufferedWriter(p)){GSON.toJson(new Store(SAMPLES),w);}}catch(Exception e){System.err.println("[Camera Lock-On] Could not save adaptive calibration: "+e.getMessage());}}
 
     private static final class Flight { final int arrowId,targetId; final Vec3 aimPoint,eye; final double distance,height,pitch; int age; double closestDistanceSq=Double.MAX_VALUE; Vec3 closestPoint; Flight(AbstractArrow a,int t,Vec3 aim,Vec3 eye,double d,double h,double p){arrowId=a.getId();targetId=t;aimPoint=aim;this.eye=eye;distance=d;height=h;pitch=p;} }

@@ -65,16 +65,6 @@ public final class GroupAimCalculator {
                 continue;
             }
 
-            if (!TargetingRules.isEligible(
-                    player,
-                    living,
-                    true,
-                    temporaryPinnedType,
-                    maximumDistance
-            )) {
-                continue;
-            }
-
             if (living.distanceToSqr(primaryTarget) > groupRadiusSqr) {
                 continue;
             }
@@ -82,6 +72,16 @@ public final class GroupAimCalculator {
             Vec3 toEntity = living.getBoundingBox().getCenter().subtract(eye);
             double length = toEntity.length();
             if (length <= 0.0001D || toEntity.scale(1.0D / length).dot(look) < 0.15D) {
+                continue;
+            }
+
+            if (!TargetingRules.isEligible(
+                    player,
+                    living,
+                    false,
+                    temporaryPinnedType,
+                    maximumDistance
+            ) || !player.hasLineOfSight(living)) {
                 continue;
             }
 

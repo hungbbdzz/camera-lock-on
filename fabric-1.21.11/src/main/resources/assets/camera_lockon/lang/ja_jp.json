@@ -354,5 +354,8 @@
   "gui.camera_lockon.camera.distance_offset.tooltip": "カメラをプレイヤーへ近づけるか遠ざけます。",
   "gui.camera_lockon.camera.custom_editor.tooltip": "このカメラ位置の視覚的ドラッグ編集画面を開きます。",
   "gui.camera_lockon.camera.mirror.tooltip": "水平カメラオフセットを反対側の肩へ反転します。",
-  "gui.camera_lockon.camera.custom_drag.tooltip": "プレビュー内をドラッグして、プレイヤーの構図を水平・垂直に移動します。"
+  "gui.camera_lockon.camera.custom_drag.tooltip": "プレビュー内をドラッグして、プレイヤーの構図を水平・垂直に移動します。",
+  "key.category.camera_lockon.general": "Camera Lock-On ターゲット固定",
+  "gui.camera_lockon.projectile_settings.projectile_weapons": "遠거리・投射武器の管理",
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "弾道予測と照準アシストの対象にするバニラ・Modの遠距離武器を追加または削除します。"
 }

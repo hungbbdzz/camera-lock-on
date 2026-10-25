@@ -12,14 +12,37 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
+import net.minecraft.world.entity.NeutralMob;
+import net.minecraft.world.entity.OwnableEntity;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class TargetingRules {
+    private static final Map<EntityType<?>, String> TYPE_ID_CACHE = new ConcurrentHashMap<>();
+    private static List<? extends String> lastBlacklistSource;
+    private static Set<String> cachedBlacklist = Collections.emptySet();
+    private static List<? extends String> lastBossListSource;
+    private static Set<String> cachedBossTypes = Collections.emptySet();
+
     private TargetingRules() {
+    }
+
+    private static String getTypeIdString(EntityType<?> type) {
+        if (type == null) {
+            return "";
+        }
+        return TYPE_ID_CACHE.computeIfAbsent(type, t -> {
+            ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(t);
+            return id == null ? "" : id.toString();
+        });
     }
 
     public static boolean isEligible(
@@ -29,11 +52,15 @@ public final class TargetingRules {
             EntityType<?> temporaryPinnedType,
             double maximumRange
     ) {
-        if (target == player || !target.isAlive() || target.isRemoved()) {
+        if (target == player || target == player.getVehicle() || !target.isAlive() || target.isRemoved()) {
             return false;
         }
 
         if (target instanceof Player targetPlayer && targetPlayer.isSpectator()) {
+            return false;
+        }
+
+        if (target.isInvisibleTo(player) && !target.isCurrentlyGlowing()) {
             return false;
         }
 
@@ -70,6 +97,12 @@ public final class TargetingRules {
         boolean explicitTypeOverride = pinnedMatch
                 || (targetTypeMode != CameraLockOnConfig.TargetTypeMode.ANY && selectedMatch);
 
+        if (!explicitTypeOverride
+                && target instanceof OwnableEntity ownable
+                && ownable.getOwner() == player) {
+            return false;
+        }
+
         if (CameraLockOnConfig.HOSTILE_ONLY.get()
                 && !explicitTypeOverride
                 && !isHostile(target, player)) {
@@ -80,13 +113,18 @@ public final class TargetingRules {
     }
 
     public static boolean isHostile(LivingEntity target, LocalPlayer player) {
-        if (target instanceof Player) {
-            return true;
+        if (target instanceof Player targetPlayer) {
+            return !targetPlayer.isCreative()
+                    && !targetPlayer.isSpectator()
+                    && !player.isAlliedTo(targetPlayer);
         }
         if (target instanceof Enemy) {
             return true;
         }
         if (target.getType().getCategory() == MobCategory.MONSTER) {
+            return true;
+        }
+        if (target instanceof NeutralMob neutral && neutral.isAngry()) {
             return true;
         }
         return target instanceof Mob mob && mob.getTarget() == player;
@@ -97,36 +135,38 @@ public final class TargetingRules {
         if (configuredId == null || configuredId.isBlank()) {
             return false;
         }
-        ResourceLocation actualId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
-        return actualId != null && configuredId.equals(actualId.toString());
+        String actualId = getTypeIdString(target.getType());
+        return !actualId.isEmpty() && configuredId.equals(actualId);
     }
 
     public static boolean isBlacklisted(EntityType<?> type) {
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
-        if (id == null) {
+        String value = getTypeIdString(type);
+        if (value.isEmpty()) {
             return false;
         }
-        String value = id.toString();
-        for (String entry : CameraLockOnConfig.ENTITY_BLACKLIST.get()) {
-            if (value.equals(entry)) {
-                return true;
-            }
+        List<? extends String> current = CameraLockOnConfig.ENTITY_BLACKLIST.get();
+        if (current != lastBlacklistSource) {
+            lastBlacklistSource = current;
+            cachedBlacklist = current == null || current.isEmpty()
+                    ? Collections.emptySet()
+                    : new HashSet<>(current);
         }
-        return false;
+        return cachedBlacklist.contains(value);
     }
 
     public static boolean isBoss(EntityType<?> type) {
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(type);
-        if (id == null) {
+        String value = getTypeIdString(type);
+        if (value.isEmpty()) {
             return false;
         }
-        String value = id.toString();
-        for (String entry : CameraLockOnConfig.BOSS_ENTITY_TYPES.get()) {
-            if (value.equals(entry)) {
-                return true;
-            }
+        List<? extends String> current = CameraLockOnConfig.BOSS_ENTITY_TYPES.get();
+        if (current != lastBossListSource) {
+            lastBossListSource = current;
+            cachedBossTypes = current == null || current.isEmpty()
+                    ? Collections.emptySet()
+                    : new HashSet<>(current);
         }
-        return false;
+        return cachedBossTypes.contains(value);
     }
 
     public static Vec3 toWorldAimPoint(

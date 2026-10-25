@@ -12,6 +12,7 @@ run/
 
 .idea/
 .vscode/
+.eclipse/
 
 *.log
 *.class

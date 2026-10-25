@@ -186,6 +186,7 @@ public final class LockOnController {
     );
 
     private static LivingEntity lockedTarget;
+    private static LivingEntity previousLockedTarget;
     private static boolean active;
     private static EntityType<?> temporaryPinnedType;
 
@@ -234,18 +235,21 @@ public final class LockOnController {
         }
 
         CombatAwareness.tick(player, level);
-        pollConfiguredLockMouseButton(minecraft);
 
         while (OPEN_CONFIG_KEY.consumeClick()) {
             minecraft.setScreen(new LockOnConfigScreen(minecraft.screen));
+            discardPendingLockInput(minecraft);
             resetAutoLockCandidate();
             return;
         }
 
         if (minecraft.screen != null) {
+            discardPendingLockInput(minecraft);
             resetAutoLockCandidate();
             return;
         }
+
+        pollConfiguredLockMouseButton(minecraft);
 
         ThirdPersonCameraController.tick();
         handleLockKey(player, level);
@@ -341,6 +345,24 @@ public final class LockOnController {
         lockMouseWasDown = down;
     }
 
+    private static void discardPendingLockInput(Minecraft minecraft) {
+        while (LOCK_ON_KEY.consumeClick()) {
+            // Drain clicks queued while a GUI screen was active
+        }
+        pendingRawLockKeyPresses = 0;
+        lockMousePressedThisTick = false;
+        boolean down = false;
+        long window = minecraft.getWindow().getWindow();
+        for (int button = GLFW.GLFW_MOUSE_BUTTON_1; button <= GLFW.GLFW_MOUSE_BUTTON_LAST; button++) {
+            if (!LOCK_ON_KEY.matchesMouse(button)) {
+                continue;
+            }
+            down = GLFW.glfwGetMouseButton(window, button) == GLFW.GLFW_PRESS;
+            break;
+        }
+        lockMouseWasDown = down;
+    }
+
     private static void handleSwitchTargetKey(LocalPlayer player, ClientLevel level) {
         while (SWITCH_TARGET_KEY.consumeClick()) {
             if (!active || lockedTarget == null) {
@@ -348,6 +370,35 @@ public final class LockOnController {
             }
 
             LivingEntity target = findSwitchTarget(player, level, lockedTarget);
+            if (target != null) {
+                lockTarget(target, LockReason.SWITCH);
+            }
+        }
+
+        while (SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+            if (!active || lockedTarget == null) {
+                continue;
+            }
+
+            LivingEntity target = null;
+            if (previousLockedTarget != null
+                    && previousLockedTarget != lockedTarget
+                    && previousLockedTarget.level() == level
+                    && TargetingRules.isEligible(
+                            player,
+                            previousLockedTarget,
+                            true,
+                            temporaryPinnedType,
+                            CameraLockOnConfig.LOCK_ON_RANGE.get()
+                    )) {
+                target = previousLockedTarget;
+            }
+            if (target == null) {
+                target = TargetCycleController.findPreviousTarget(player, level, lockedTarget);
+            }
+            if (target == null) {
+                target = findSwitchTarget(player, level, lockedTarget);
+            }
             if (target != null) {
                 lockTarget(target, LockReason.SWITCH);
             }
@@ -991,8 +1042,7 @@ public final class LockOnController {
     }
 
     public static void renderReticle(PoseStack poseStack, Camera camera, float partialTick) {
-        if (!CameraLockOnConfig.SHOW_RETICLE.get()
-                || !canRenderLockedTargetInfo()
+        if (!canRenderLockedTargetInfo()
                 || !active
                 || lockedTarget == null
                 || lockedTarget.isRemoved()) {
@@ -1038,6 +1088,10 @@ public final class LockOnController {
             lastEffectiveAimPoint = aimPoint;
         }
         groupTargetCount = groupResult.targetCount();
+
+        if (!CameraLockOnConfig.SHOW_RETICLE.get()) {
+            return;
+        }
 
         Vec3 relative = aimPoint.subtract(camera.getPosition());
         double distance = relative.length();
@@ -1093,7 +1147,7 @@ public final class LockOnController {
                     || !TargetingRules.isEligible(
                             player,
                             living,
-                            true,
+                            false,
                             temporaryPinnedType,
                             maximumRange
                     )) {
@@ -1107,7 +1161,7 @@ public final class LockOnController {
             }
 
             double alignment = toTarget.scale(1.0D / length).dot(look);
-            if (alignment <= VIEW_CONE_DOT_THRESHOLD) {
+            if (alignment <= VIEW_CONE_DOT_THRESHOLD || !player.hasLineOfSight(living)) {
                 continue;
             }
 
@@ -1190,22 +1244,27 @@ public final class LockOnController {
             if (!(entity instanceof LivingEntity living)
                     || living == player
                     || living == excludedTarget
-                    || living.getType() != requiredType
-                    || !TargetingRules.isEligible(
-                            player,
-                            living,
-                            true,
-                            temporaryPinnedType,
-                            maximumRange
-                    )) {
+                    || living.getType() != requiredType) {
                 continue;
             }
 
             double distanceSqr = player.distanceToSqr(living);
-            if (distanceSqr < nearestDistanceSqr) {
-                nearestDistanceSqr = distanceSqr;
-                nearest = living;
+            if (distanceSqr >= nearestDistanceSqr) {
+                continue;
             }
+
+            if (!TargetingRules.isEligible(
+                    player,
+                    living,
+                    true,
+                    temporaryPinnedType,
+                    maximumRange
+            )) {
+                continue;
+            }
+
+            nearestDistanceSqr = distanceSqr;
+            nearest = living;
         }
         return nearest;
     }
@@ -1246,6 +1305,9 @@ public final class LockOnController {
 
     private static void lockTarget(LivingEntity target, LockReason reason) {
         boolean switched = active && lockedTarget != null && lockedTarget != target;
+        if (switched) {
+            previousLockedTarget = lockedTarget;
+        }
         lockedTarget = target;
         active = true;
         wasLockedLastFrame = false;
@@ -1266,6 +1328,7 @@ public final class LockOnController {
     private static void unlockTarget(boolean manualUnlock, LockReason reason) {
         boolean wasActive = active;
         lockedTarget = null;
+        previousLockedTarget = null;
         active = false;
         wasLockedLastFrame = false;
         contextualReturnProgress = 1.0D;
@@ -1314,6 +1377,7 @@ public final class LockOnController {
         lockMouseWasDown = false;
         lockMousePressedThisTick = false;
         lockedTarget = null;
+        previousLockedTarget = null;
         active = false;
         temporaryPinnedType = null;
         wasLockedLastFrame = false;

@@ -354,5 +354,8 @@
   "gui.camera_lockon.camera.distance_offset.tooltip": "Move the camera closer to or farther from the player.",
   "gui.camera_lockon.camera.custom_editor.tooltip": "Open the visual drag editor for this camera position.",
   "gui.camera_lockon.camera.mirror.tooltip": "Flip the horizontal camera offset to the opposite shoulder.",
-  "gui.camera_lockon.camera.custom_drag.tooltip": "Drag inside the preview area to move the player framing horizontally and vertically."
+  "gui.camera_lockon.camera.custom_drag.tooltip": "Drag inside the preview area to move the player framing horizontally and vertically.",
+  "key.category.camera_lockon.general": "Camera Lock-On",
+  "gui.camera_lockon.projectile_settings.projectile_weapons": "Manage Projectile Weapons",
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Register or remove vanilla and modded ranged weapons for projectile prediction and assistance."
 }

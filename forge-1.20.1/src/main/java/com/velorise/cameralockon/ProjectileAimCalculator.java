@@ -6,6 +6,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TridentItem;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
@@ -23,6 +24,8 @@ public final class ProjectileAimCalculator {
     private static Vec3 smoothedVelocity = Vec3.ZERO;
     private static Vec3 smoothedAimPoint;
     private static int trackedTargetId = Integer.MIN_VALUE;
+    private static long lastVelocityGameTime = Long.MIN_VALUE;
+    private static long lastAimSmoothNanos = 0L;
     private static Vec3 lastResolvedAimPoint;
     private static int lastResolvedTargetId = Integer.MIN_VALUE;
 
@@ -38,10 +41,16 @@ public final class ProjectileAimCalculator {
     private ProjectileAimCalculator() {}
 
     public static boolean isSupportedWeapon(LocalPlayer player) {
-        ItemStack stack = player.getUseItem();
-        if (stack.isEmpty()) stack = player.getMainHandItem();
+        return isSupportedStack(player.getUseItem())
+                || isSupportedStack(player.getMainHandItem())
+                || isSupportedStack(player.getOffhandItem());
+    }
+
+    private static boolean isSupportedStack(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
         return stack.getItem() instanceof BowItem
                 || stack.getItem() instanceof CrossbowItem
+                || stack.getItem() instanceof TridentItem
                 || ProjectileWeaponStore.contains(stack.getItem());
     }
 
@@ -89,8 +98,12 @@ public final class ProjectileAimCalculator {
 
         resetIfTargetChanged(target);
         Vec3 measuredVelocity = new Vec3(target.getX() - target.xo, target.getY() - target.yo, target.getZ() - target.zo);
-        double smoothing = CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.get();
-        smoothedVelocity = smoothedVelocity.scale(smoothing).add(measuredVelocity.scale(1.0D - smoothing));
+        long gameTime = player.level().getGameTime();
+        if (gameTime != lastVelocityGameTime) {
+            lastVelocityGameTime = gameTime;
+            double smoothing = CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.get();
+            smoothedVelocity = smoothedVelocity.scale(smoothing).add(measuredVelocity.scale(1.0D - smoothing));
+        }
 
         double speed = projectileSpeed(player);
         Vec3 relativeVelocity = CameraLockOnConfig.PROJECTILE_COMPENSATE_PLAYER_MOVEMENT.get()
@@ -152,8 +165,17 @@ public final class ProjectileAimCalculator {
         double aimStrength = Mth.clamp(configuredStrength * transitionProgress, 0.0D, 1.0D);
         Vec3 desired = baseAimPoint.lerp(referenceAim, aimStrength);
 
-        if (smoothedAimPoint == null) smoothedAimPoint = baseAimPoint;
-        smoothedAimPoint = smoothedAimPoint.lerp(desired, 0.28D);
+        long now = System.nanoTime();
+        double dt = lastAimSmoothNanos == 0L
+                ? 1.0D / 60.0D
+                : Math.min(0.10D, Math.max(0.0D, (now - lastAimSmoothNanos) / 1_000_000_000.0D));
+        lastAimSmoothNanos = now;
+        if (smoothedAimPoint == null) {
+            smoothedAimPoint = desired;
+        } else if (dt > 1.0E-4D) {
+            double alpha = 1.0D - Math.pow(1.0D - 0.28D, dt * 60.0D);
+            smoothedAimPoint = smoothedAimPoint.lerp(desired, Mth.clamp(alpha, 0.0D, 1.0D));
+        }
         return smoothedAimPoint;
     }
 
@@ -610,10 +632,25 @@ public final class ProjectileAimCalculator {
     }
 
     private static boolean isPredictionActive(LocalPlayer player) {
-        ItemStack useStack = player.getUseItem();
-        if (player.isUsingItem() && useStack.getItem() instanceof BowItem) return true;
-        ItemStack held = player.getMainHandItem();
-        return held.getItem() instanceof CrossbowItem;
+        if (player.isUsingItem()) {
+            ItemStack useStack = player.getUseItem();
+            if (useStack.getItem() instanceof BowItem
+                    || useStack.getItem() instanceof CrossbowItem
+                    || useStack.getItem() instanceof TridentItem
+                    || ProjectileWeaponStore.contains(useStack.getItem())) {
+                return true;
+            }
+        }
+        return isReadyRangedStack(player.getMainHandItem())
+                || isReadyRangedStack(player.getOffhandItem());
+    }
+
+    private static boolean isReadyRangedStack(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        if (stack.getItem() instanceof CrossbowItem) {
+            return CrossbowItem.isCharged(stack);
+        }
+        return ProjectileWeaponStore.contains(stack.getItem());
     }
 
     public static double projectileSpeedForPreview(LocalPlayer player) {
@@ -622,13 +659,25 @@ public final class ProjectileAimCalculator {
 
     private static double projectileSpeed(LocalPlayer player) {
         ItemStack stack = player.getUseItem();
+        if (stack.isEmpty()) {
+            stack = isSupportedStack(player.getMainHandItem())
+                    ? player.getMainHandItem()
+                    : player.getOffhandItem();
+        }
         if (stack.getItem() instanceof BowItem) {
+            if (!player.isUsingItem()) return 3.0D;
             int ticks = player.getTicksUsingItem();
             float charge = ticks / 20.0F;
             charge = (charge * charge + charge * 2.0F) / 3.0F;
             return Mth.clamp(charge, 0.0F, 1.0F) * 3.0D;
         }
-        return 3.15D;
+        if (stack.getItem() instanceof CrossbowItem) {
+            return 3.15D;
+        }
+        if (stack.getItem() instanceof TridentItem) {
+            return 2.5D;
+        }
+        return 3.0D;
     }
 
     private static double effectiveAverageSpeed(double initialSpeed, double ticks) {
@@ -650,6 +699,8 @@ public final class ProjectileAimCalculator {
             trackedTargetId = target.getId();
             smoothedVelocity = Vec3.ZERO;
             smoothedAimPoint = null;
+            lastVelocityGameTime = Long.MIN_VALUE;
+            lastAimSmoothNanos = 0L;
         }
     }
 

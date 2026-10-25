@@ -108,10 +108,8 @@ New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
 try {
     Invoke-Build 'NeoForge 1.21.1'  'neoforge-1.21.1'  'JAVA21_HOME' 'JDK 21'
-    Invoke-Build 'NeoForge 1.21.4'  'neoforge-1.21.4'  'JAVA21_HOME' 'JDK 21'
     Invoke-Build 'NeoForge 1.21.11' 'neoforge-1.21.11' 'JAVA21_HOME' 'JDK 21'
     Invoke-Build 'Fabric 1.21.1'    'fabric-1.21.1'    'JAVA21_HOME' 'JDK 21'
-    Invoke-Build 'Fabric 1.21.4'    'fabric-1.21.4'    'JAVA21_HOME' 'JDK 21'
     Invoke-Build 'Fabric 1.21.11'   'fabric-1.21.11'   'JAVA21_HOME' 'JDK 21'
     Invoke-Build 'Forge 1.20.1'     'forge-1.20.1'     'JAVA17_HOME' 'JDK 17'
 
@@ -119,11 +117,6 @@ try {
         (Join-Path $Root 'neoforge-1.21.1\build\libs') `
         'camera_lockon-1.21.1-neoforge-*.jar' `
         'NeoForge 1.21.1'
-
-    $neoForge1214Jar = Get-LatestReleaseJar `
-        (Join-Path $Root 'neoforge-1.21.4\build\libs') `
-        'camera_lockon-1.21.4-neoforge-*.jar' `
-        'NeoForge 1.21.4'
 
     $neoForge12111Jar = Get-LatestReleaseJar `
         (Join-Path $Root 'neoforge-1.21.11\build\libs') `
@@ -134,11 +127,6 @@ try {
         (Join-Path $Root 'fabric-1.21.1\build\libs') `
         'camera-lock-on-fabric-1.21.1-*.jar' `
         'Fabric 1.21.1'
-
-    $fabric1214Jar = Get-LatestReleaseJar `
-        (Join-Path $Root 'fabric-1.21.4\build\libs') `
-        'camera-lock-on-fabric-1.21.4-*.jar' `
-        'Fabric 1.21.4'
 
     $fabric12111Jar = Get-LatestReleaseJar `
         (Join-Path $Root 'fabric-1.21.11\build\libs') `
@@ -151,15 +139,13 @@ try {
         'Forge 1.20.1'
 
     Copy-ReleaseJar $neoForge121Jar   'NeoForge 1.21.1'
-    Copy-ReleaseJar $neoForge1214Jar  'NeoForge 1.21.4'
     Copy-ReleaseJar $neoForge12111Jar 'NeoForge 1.21.11'
     Copy-ReleaseJar $fabric121Jar     'Fabric 1.21.1'
-    Copy-ReleaseJar $fabric1214Jar    'Fabric 1.21.4'
     Copy-ReleaseJar $fabric12111Jar   'Fabric 1.21.11'
     Copy-ReleaseJar $forgeJar         'Forge 1.20.1'
 
     Write-Host ""
-    Write-Host 'All 7 builds completed successfully.' -ForegroundColor Green
+    Write-Host 'All 5 builds completed successfully.' -ForegroundColor Green
     Write-Host "Release JAR directory: $OutputDirectory" -ForegroundColor Cyan
 }
 finally {

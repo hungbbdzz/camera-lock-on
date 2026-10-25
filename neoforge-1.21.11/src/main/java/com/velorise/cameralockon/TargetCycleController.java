@@ -42,40 +42,62 @@ public final class TargetCycleController {
                 continue;
             }
 
-            LivingEntity next = findNextTarget(player, level, current);
+            LivingEntity next = findNextTarget(player, level, current, true);
             if (next != null && next != current) {
                 LockOnController.requestLock(next, LockOnController.LockReason.SWITCH, true);
             }
         }
+
+        while (LockOnController.SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+            LivingEntity current = LockOnController.getLockedTarget();
+            if (!LockOnController.isActive() || current == null) {
+                continue;
+            }
+
+            LivingEntity previous = findNextTarget(player, level, current, false);
+            if (previous != null && previous != current) {
+                LockOnController.requestLock(previous, LockOnController.LockReason.SWITCH, true);
+            }
+        }
     }
 
-    /** Applies the Retarget Rule (Any / Same Type First / Same Type Only) on top of the clockwise search. */
-    private static LivingEntity findNextTarget(
+    public static LivingEntity findPreviousTarget(
             LocalPlayer player,
             ClientLevel level,
             LivingEntity current
     ) {
+        return findNextTarget(player, level, current, false);
+    }
+
+    /** Applies the Retarget Rule (Any / Same Type First / Same Type Only) on top of the directional search. */
+    private static LivingEntity findNextTarget(
+            LocalPlayer player,
+            ClientLevel level,
+            LivingEntity current,
+            boolean clockwise
+    ) {
         CameraLockOnConfig.RetargetMode mode =
                 CameraLockOnConfig.RetargetMode.fromConfig(CameraLockOnConfig.RETARGET_MODE.get());
         if (mode == CameraLockOnConfig.RetargetMode.ANY) {
-            return findNextClockwiseTarget(player, level, current, null);
+            return findNextDirectionalTarget(player, level, current, null, clockwise);
         }
 
-        LivingEntity sameType = findNextClockwiseTarget(player, level, current, current.getType());
+        LivingEntity sameType = findNextDirectionalTarget(player, level, current, current.getType(), clockwise);
         if (sameType != null) {
             return sameType;
         }
 
         return mode == CameraLockOnConfig.RetargetMode.SAME_TYPE_FIRST
-                ? findNextClockwiseTarget(player, level, current, null)
+                ? findNextDirectionalTarget(player, level, current, null, clockwise)
                 : null;
     }
 
-    private static LivingEntity findNextClockwiseTarget(
+    private static LivingEntity findNextDirectionalTarget(
             LocalPlayer player,
             ClientLevel level,
             LivingEntity current,
-            EntityType<?> requiredType
+            EntityType<?> requiredType,
+            boolean clockwise
     ) {
         double range = CameraLockOnConfig.LOCK_ON_RANGE.get();
         Vec3 eye = ThirdPersonAimResolver.targetingOrigin(player);
@@ -85,7 +107,7 @@ public final class TargetCycleController {
         LivingEntity bestForward = null;
         LivingEntity wrapTarget = null;
         double bestForwardDelta = Double.MAX_VALUE;
-        double smallestAbsoluteAngle = Double.MAX_VALUE;
+        double bestWrapAngle = clockwise ? Double.MAX_VALUE : -Double.MAX_VALUE;
 
         for (Entity entity : level.entitiesForRendering()) {
             if (!(entity instanceof LivingEntity living)
@@ -95,7 +117,7 @@ public final class TargetCycleController {
                     || !TargetingRules.isEligible(
                             player,
                             living,
-                            true,
+                            false,
                             LockOnController.getTemporaryPinnedType(),
                             range
                     )) {
@@ -108,16 +130,22 @@ public final class TargetCycleController {
                 continue;
             }
 
+            if (!player.hasLineOfSight(living)) {
+                continue;
+            }
+
             double angle = horizontalAngle(eye, living);
-            double clockwiseDelta = positiveDegrees(angle - currentAngle);
-            if (clockwiseDelta > MINIMUM_ANGLE_STEP && clockwiseDelta < bestForwardDelta) {
-                bestForwardDelta = clockwiseDelta;
+            double directionalDelta = clockwise
+                    ? positiveDegrees(angle - currentAngle)
+                    : positiveDegrees(currentAngle - angle);
+            if (directionalDelta > MINIMUM_ANGLE_STEP && directionalDelta < bestForwardDelta) {
+                bestForwardDelta = directionalDelta;
                 bestForward = living;
             }
 
             double normalizedAngle = positiveDegrees(angle);
-            if (normalizedAngle < smallestAbsoluteAngle) {
-                smallestAbsoluteAngle = normalizedAngle;
+            if (clockwise ? (normalizedAngle < bestWrapAngle) : (normalizedAngle > bestWrapAngle)) {
+                bestWrapAngle = normalizedAngle;
                 wrapTarget = living;
             }
         }

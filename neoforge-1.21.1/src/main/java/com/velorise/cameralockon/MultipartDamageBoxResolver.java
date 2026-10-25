@@ -64,7 +64,7 @@ public final class MultipartDamageBoxResolver {
         VecCenter parentCenter = VecCenter.of(target.getBoundingBox());
         for (Map.Entry<Entity, String> entry : parts.entrySet()) {
             Entity part = entry.getKey();
-            if (part == null || part == target || part.isRemoved() || !part.isPickable()) continue;
+            if (part == null || part == target || part instanceof LivingEntity || part == target.getVehicle() || part.getVehicle() == target || part.isRemoved() || !part.isPickable()) continue;
 
             AABB box = part.getBoundingBox();
             if (!isUsable(box)) continue;
@@ -94,7 +94,12 @@ public final class MultipartDamageBoxResolver {
         List<Method> methods = new ArrayList<>();
         List<Field> fields = new ArrayList<>();
 
-        for (Class<?> cursor = type; cursor != null && cursor != Object.class; cursor = cursor.getSuperclass()) {
+        for (Class<?> cursor = type;
+             cursor != null && cursor != Object.class
+                     && cursor != LivingEntity.class
+                     && cursor != net.minecraft.world.entity.Mob.class
+                     && cursor != Entity.class;
+             cursor = cursor.getSuperclass()) {
             for (Method method : cursor.getDeclaredMethods()) {
                 if (method.getParameterCount() != 0 || Modifier.isStatic(method.getModifiers())) continue;
                 for (String acceptedName : PART_METHOD_NAMES) {
@@ -110,13 +115,16 @@ public final class MultipartDamageBoxResolver {
                 if (Modifier.isStatic(field.getModifiers())) continue;
                 String name = field.getName().toLowerCase(Locale.ROOT);
                 Class<?> fieldType = field.getType();
-                boolean entityType = Entity.class.isAssignableFrom(fieldType);
-                boolean entityArray = fieldType.isArray()
-                        && Entity.class.isAssignableFrom(fieldType.getComponentType());
-                boolean namedLikePart = name.contains("part") || name.contains("subentit")
+                boolean isNonLivingEntity = Entity.class.isAssignableFrom(fieldType)
+                        && !LivingEntity.class.isAssignableFrom(fieldType);
+                boolean isNonLivingEntityArray = fieldType.isArray()
+                        && Entity.class.isAssignableFrom(fieldType.getComponentType())
+                        && !LivingEntity.class.isAssignableFrom(fieldType.getComponentType());
+                boolean namedLikePart = (name.contains("part") || name.contains("subentit")
                         || name.contains("head") || name.contains("neck") || name.contains("body")
-                        || name.contains("wing") || name.contains("tail");
-                if (entityType || entityArray || namedLikePart) {
+                        || name.contains("wing") || name.contains("tail"))
+                        && !LivingEntity.class.isAssignableFrom(fieldType);
+                if (isNonLivingEntity || isNonLivingEntityArray || namedLikePart) {
                     makeAccessible(field);
                     fields.add(field);
                 }

@@ -142,6 +142,29 @@ public final class PresetStore {
                 CameraLockOnConfig.SOUND_VOLUME.set(clamp(number(s, "soundVolume", CameraLockOnConfig.SOUND_VOLUME.get()), 0, 1));
                 ClientFeatureStore.setSwitchTargetMode(ClientFeatureStore.SwitchTargetMode.fromName(
                         text(s, "switchTargetMode", ClientFeatureStore.getSwitchTargetMode().name())));
+                CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(CameraLockOnConfig.ProjectileAssistMode.fromConfig(
+                        text(s, "projectileAssistMode", CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get())).name());
+                CameraLockOnConfig.BOW_AIM_REFERENCE.set(CameraLockOnConfig.BowAimReference.fromConfig(
+                        text(s, "bowAimReference", CameraLockOnConfig.BOW_AIM_REFERENCE.get())).name());
+                CameraLockOnConfig.MULTIPART_AIM_MODE.set(CameraLockOnConfig.MultipartAimMode.fromConfig(
+                        text(s, "multipartAimMode", CameraLockOnConfig.MULTIPART_AIM_MODE.get())).name());
+                CameraLockOnConfig.PROJECTILE_PREDICTION_STRENGTH.set(clamp(number(s, "projectilePredictionStrength", CameraLockOnConfig.PROJECTILE_PREDICTION_STRENGTH.get()), 0.0, 1.0));
+                CameraLockOnConfig.PROJECTILE_EARLY_PREDICTION.set(clamp(number(s, "projectileEarlyPrediction", CameraLockOnConfig.PROJECTILE_EARLY_PREDICTION.get()), 0.0, 1.0));
+                CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.set(clamp(number(s, "projectileMotionSmoothing", CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.get()), 0.0, 0.95));
+                CameraLockOnConfig.PROJECTILE_MAX_FLIGHT_TIME.set(clamp(number(s, "projectileMaxFlightTime", CameraLockOnConfig.PROJECTILE_MAX_FLIGHT_TIME.get()), 0.25, 8.0));
+                CameraLockOnConfig.PROJECTILE_COMPENSATE_DROP.set(bool(s, "projectileCompensateDrop", CameraLockOnConfig.PROJECTILE_COMPENSATE_DROP.get()));
+                CameraLockOnConfig.PROJECTILE_COMPENSATE_PLAYER_MOVEMENT.set(bool(s, "projectileCompensatePlayerMovement", CameraLockOnConfig.PROJECTILE_COMPENSATE_PLAYER_MOVEMENT.get()));
+                CameraLockOnConfig.AUTO_RELEASE_BOW.set(bool(s, "autoReleaseBow", CameraLockOnConfig.AUTO_RELEASE_BOW.get()));
+                CameraLockOnConfig.AUTO_RECHARGE_BOW.set(bool(s, "autoRechargeBow", CameraLockOnConfig.AUTO_RECHARGE_BOW.get()));
+                CameraLockOnConfig.AUTO_CYCLE_CROSSBOW.set(bool(s, "autoCycleCrossbow", CameraLockOnConfig.AUTO_CYCLE_CROSSBOW.get()));
+                CameraLockOnConfig.SMART_PROJECTILE_HITBOX.set(bool(s, "smartProjectileHitbox", CameraLockOnConfig.SMART_PROJECTILE_HITBOX.get()));
+                CameraLockOnConfig.ADAPTIVE_AIM_CALIBRATION.set(bool(s, "adaptiveAimCalibration", CameraLockOnConfig.ADAPTIVE_AIM_CALIBRATION.get()));
+                CameraLockOnConfig.TRAJECTORY_PREVIEW.set(bool(s, "trajectoryPreview", CameraLockOnConfig.TRAJECTORY_PREVIEW.get()));
+                CameraLockOnConfig.TRAJECTORY_FULL_CHARGE.set(bool(s, "trajectoryFullCharge", CameraLockOnConfig.TRAJECTORY_FULL_CHARGE.get()));
+                CameraLockOnConfig.TRAJECTORY_SHOW_WITHOUT_LOCK.set(bool(s, "trajectoryShowWithoutLock", CameraLockOnConfig.TRAJECTORY_SHOW_WITHOUT_LOCK.get()));
+                CameraLockOnConfig.TRAJECTORY_PREVIEW_LENGTH.set(clamp(number(s, "trajectoryPreviewLength", CameraLockOnConfig.TRAJECTORY_PREVIEW_LENGTH.get()), 16.0, 96.0));
+                CameraLockOnConfig.AUTO_RELEASE_BOW_CHARGE.set(clamp(number(s, "autoReleaseBowCharge", CameraLockOnConfig.AUTO_RELEASE_BOW_CHARGE.get()), 0.25, 1.0));
+                CameraLockOnConfig.AUTO_RELEASE_AIM_TOLERANCE.set(clamp(number(s, "autoReleaseAimTolerance", CameraLockOnConfig.AUTO_RELEASE_AIM_TOLERANCE.get()), 0.5, 10.0));
             }
 
             if (categories.contains(Category.CAMERA)) {
@@ -164,6 +187,22 @@ public final class PresetStore {
                         text(s, "aimRayMode", CameraLockOnConfig.AIM_RAY_MODE.get())).name());
                 ClientFeatureStore.setHardLockForcesFollowAim(bool(s, "hardLockForcesFollowAim",
                         ClientFeatureStore.isHardLockForcesFollowAim()));
+                ClientFeatureStore.setThirdPersonCameraMode(ClientFeatureStore.ThirdPersonCameraMode.fromName(
+                        text(s, "thirdPersonCameraMode", ClientFeatureStore.getThirdPersonCameraMode().name())));
+                ClientFeatureStore.setActiveCameraSlot(ClientFeatureStore.CameraSlot.fromName(
+                        text(s, "activeCameraSlot", ClientFeatureStore.getActiveCameraSlot().name())));
+                for (ClientFeatureStore.CameraSlot slot : ClientFeatureStore.CameraSlot.values()) {
+                    String prefix = "cameraSlot_" + slot.name().toLowerCase(Locale.ROOT);
+                    ClientFeatureStore.CameraPosition cur = ClientFeatureStore.getCameraPosition(slot);
+                    double hx = clamp(number(s, prefix + "_x", cur.horizontalOffset()), -3.0, 3.0);
+                    double vy = clamp(number(s, prefix + "_y", cur.verticalOffset()), -0.5, 1.5);
+                    double dz = clamp(number(s, prefix + "_z", cur.distanceOffset()), -2.0, 2.0);
+                    ClientFeatureStore.setCameraPosition(slot, new ClientFeatureStore.CameraPosition(hx, vy, dz));
+                    if (s.has(prefix + "_cycle")) {
+                        ClientFeatureStore.setCameraSlotEnabledInCycle(slot,
+                                bool(s, prefix + "_cycle", ClientFeatureStore.isCameraSlotEnabledInCycle(slot)));
+                    }
+                }
             }
 
             if (categories.contains(Category.AUTO)) {
@@ -186,6 +225,7 @@ public final class PresetStore {
 
             if (categories.contains(Category.HUD)) {
                 CameraLockOnConfig.TARGET_HUD.set(bool(s, "hudEnabled", CameraLockOnConfig.TARGET_HUD.get()));
+                CameraLockOnConfig.TARGET_OUTLINE.set(bool(s, "targetOutline", CameraLockOnConfig.TARGET_OUTLINE.get()));
                 CameraLockOnConfig.HUD_SHOW_NAME.set(bool(s, "hudName", CameraLockOnConfig.HUD_SHOW_NAME.get()));
                 CameraLockOnConfig.HUD_SHOW_HEALTH.set(bool(s, "hudHealth", CameraLockOnConfig.HUD_SHOW_HEALTH.get()));
                 CameraLockOnConfig.HUD_SHOW_DISTANCE.set(bool(s, "hudDistance", CameraLockOnConfig.HUD_SHOW_DISTANCE.get()));
@@ -210,6 +250,8 @@ public final class PresetStore {
                 CameraLockOnConfig.ATTACKER_LOCK_RANGE.set(clamp(number(s, "attackerLockRange", CameraLockOnConfig.ATTACKER_LOCK_RANGE.get()), 4, 64));
                 CameraLockOnConfig.MAX_ATTACKER_INDICATORS.set((int) clamp(number(s, "maxAttackerIndicators", CameraLockOnConfig.MAX_ATTACKER_INDICATORS.get()), 1, 6));
                 CameraLockOnConfig.ATTACKER_REPLACE_TARGET.set(bool(s, "attackerReplaceTarget", CameraLockOnConfig.ATTACKER_REPLACE_TARGET.get()));
+                CameraLockOnConfig.ATTACKER_INDICATOR_LIFETIME.set(clamp(number(s, "attackerIndicatorLifetime", CameraLockOnConfig.ATTACKER_INDICATOR_LIFETIME.get()), 0.5, 10.0));
+                CameraLockOnConfig.ATTACKER_LOCK_PROTECTION.set(clamp(number(s, "attackerLockProtection", CameraLockOnConfig.ATTACKER_LOCK_PROTECTION.get()), 0.0, 5.0));
             }
 
             if (categories.contains(Category.GROUP)) {
@@ -220,6 +262,7 @@ public final class PresetStore {
                 CameraLockOnConfig.GROUP_AIM_STRENGTH.set(clamp(number(s, "groupAimStrength", CameraLockOnConfig.GROUP_AIM_STRENGTH.get()), 0, 1));
                 CameraLockOnConfig.GROUP_AIM_MAX_TARGETS.set((int) clamp(number(s, "groupAimMaxTargets", CameraLockOnConfig.GROUP_AIM_MAX_TARGETS.get()), 2, 8));
                 CameraLockOnConfig.GROUP_AIM_MAX_OFFSET.set(clamp(number(s, "groupAimMaxOffset", CameraLockOnConfig.GROUP_AIM_MAX_OFFSET.get()), 0.1, 3));
+                CameraLockOnConfig.GROUP_AIM_MAX_DISTANCE.set(clamp(number(s, "groupAimMaxDistance", CameraLockOnConfig.GROUP_AIM_MAX_DISTANCE.get()), 2.0, 10.0));
             }
 
             if (preset.includeBlacklist && preset.blacklist != null) {
@@ -238,6 +281,12 @@ public final class PresetStore {
                 AoeWeaponStore.clear();
                 for (String id : preset.aoeWeapons) {
                     AoeWeaponStore.add(id);
+                }
+            }
+            if (preset.includeAoeWeapons && preset.projectileWeapons != null) {
+                ProjectileWeaponStore.clear();
+                for (String id : preset.projectileWeapons) {
+                    ProjectileWeaponStore.add(id);
                 }
             }
 
@@ -260,7 +309,7 @@ public final class PresetStore {
         Preset preset = new Preset();
         preset.formatVersion = FORMAT_VERSION;
         preset.name = name;
-        preset.modVersion = "2.0.1";
+        preset.modVersion = "2.0.2";
         preset.categoryNames = categories.stream().map(Enum::name).toList();
         preset.settings = new JsonObject();
         preset.includeHudPosition = categories.contains(Category.HUD);
@@ -284,6 +333,26 @@ public final class PresetStore {
             put(s, "lockSounds", CameraLockOnConfig.LOCK_SOUNDS.get());
             put(s, "soundVolume", CameraLockOnConfig.SOUND_VOLUME.get());
             put(s, "switchTargetMode", ClientFeatureStore.getSwitchTargetMode().name());
+            put(s, "projectileAssistMode", CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get());
+            put(s, "bowAimReference", CameraLockOnConfig.BOW_AIM_REFERENCE.get());
+            put(s, "multipartAimMode", CameraLockOnConfig.MULTIPART_AIM_MODE.get());
+            put(s, "projectilePredictionStrength", CameraLockOnConfig.PROJECTILE_PREDICTION_STRENGTH.get());
+            put(s, "projectileEarlyPrediction", CameraLockOnConfig.PROJECTILE_EARLY_PREDICTION.get());
+            put(s, "projectileMotionSmoothing", CameraLockOnConfig.PROJECTILE_MOTION_SMOOTHING.get());
+            put(s, "projectileMaxFlightTime", CameraLockOnConfig.PROJECTILE_MAX_FLIGHT_TIME.get());
+            put(s, "projectileCompensateDrop", CameraLockOnConfig.PROJECTILE_COMPENSATE_DROP.get());
+            put(s, "projectileCompensatePlayerMovement", CameraLockOnConfig.PROJECTILE_COMPENSATE_PLAYER_MOVEMENT.get());
+            put(s, "autoReleaseBow", CameraLockOnConfig.AUTO_RELEASE_BOW.get());
+            put(s, "autoRechargeBow", CameraLockOnConfig.AUTO_RECHARGE_BOW.get());
+            put(s, "autoCycleCrossbow", CameraLockOnConfig.AUTO_CYCLE_CROSSBOW.get());
+            put(s, "smartProjectileHitbox", CameraLockOnConfig.SMART_PROJECTILE_HITBOX.get());
+            put(s, "adaptiveAimCalibration", CameraLockOnConfig.ADAPTIVE_AIM_CALIBRATION.get());
+            put(s, "trajectoryPreview", CameraLockOnConfig.TRAJECTORY_PREVIEW.get());
+            put(s, "trajectoryFullCharge", CameraLockOnConfig.TRAJECTORY_FULL_CHARGE.get());
+            put(s, "trajectoryShowWithoutLock", CameraLockOnConfig.TRAJECTORY_SHOW_WITHOUT_LOCK.get());
+            put(s, "trajectoryPreviewLength", CameraLockOnConfig.TRAJECTORY_PREVIEW_LENGTH.get());
+            put(s, "autoReleaseBowCharge", CameraLockOnConfig.AUTO_RELEASE_BOW_CHARGE.get());
+            put(s, "autoReleaseAimTolerance", CameraLockOnConfig.AUTO_RELEASE_AIM_TOLERANCE.get());
         }
         if (categories.contains(Category.CAMERA)) {
             put(s, "deadZone", CameraLockOnConfig.DEAD_ZONE.get());
@@ -301,6 +370,16 @@ public final class PresetStore {
             put(s, "freeCameraCursorMode", ClientFeatureStore.getFreeCameraCursorMode().name());
             put(s, "aimRayMode", CameraLockOnConfig.AIM_RAY_MODE.get());
             put(s, "hardLockForcesFollowAim", ClientFeatureStore.isHardLockForcesFollowAim());
+            put(s, "thirdPersonCameraMode", ClientFeatureStore.getThirdPersonCameraMode().name());
+            put(s, "activeCameraSlot", ClientFeatureStore.getActiveCameraSlot().name());
+            for (ClientFeatureStore.CameraSlot slot : ClientFeatureStore.CameraSlot.values()) {
+                String prefix = "cameraSlot_" + slot.name().toLowerCase(Locale.ROOT);
+                ClientFeatureStore.CameraPosition pos = ClientFeatureStore.getCameraPosition(slot);
+                put(s, prefix + "_x", pos.horizontalOffset());
+                put(s, prefix + "_y", pos.verticalOffset());
+                put(s, prefix + "_z", pos.distanceOffset());
+                put(s, prefix + "_cycle", ClientFeatureStore.isCameraSlotEnabledInCycle(slot));
+            }
         }
         if (categories.contains(Category.AUTO)) {
             put(s, "autoLock", CameraLockOnConfig.AUTO_LOCK.get());
@@ -319,6 +398,7 @@ public final class PresetStore {
         }
         if (categories.contains(Category.HUD)) {
             put(s, "hudEnabled", CameraLockOnConfig.TARGET_HUD.get());
+            put(s, "targetOutline", CameraLockOnConfig.TARGET_OUTLINE.get());
             put(s, "hudName", CameraLockOnConfig.HUD_SHOW_NAME.get());
             put(s, "hudHealth", CameraLockOnConfig.HUD_SHOW_HEALTH.get());
             put(s, "hudDistance", CameraLockOnConfig.HUD_SHOW_DISTANCE.get());
@@ -340,6 +420,8 @@ public final class PresetStore {
             put(s, "attackerLockRange", CameraLockOnConfig.ATTACKER_LOCK_RANGE.get());
             put(s, "maxAttackerIndicators", CameraLockOnConfig.MAX_ATTACKER_INDICATORS.get());
             put(s, "attackerReplaceTarget", CameraLockOnConfig.ATTACKER_REPLACE_TARGET.get());
+            put(s, "attackerIndicatorLifetime", CameraLockOnConfig.ATTACKER_INDICATOR_LIFETIME.get());
+            put(s, "attackerLockProtection", CameraLockOnConfig.ATTACKER_LOCK_PROTECTION.get());
         }
         if (categories.contains(Category.GROUP)) {
             put(s, "groupAim", CameraLockOnConfig.GROUP_AIM.get());
@@ -349,6 +431,7 @@ public final class PresetStore {
             put(s, "groupAimStrength", CameraLockOnConfig.GROUP_AIM_STRENGTH.get());
             put(s, "groupAimMaxTargets", CameraLockOnConfig.GROUP_AIM_MAX_TARGETS.get());
             put(s, "groupAimMaxOffset", CameraLockOnConfig.GROUP_AIM_MAX_OFFSET.get());
+            put(s, "groupAimMaxDistance", CameraLockOnConfig.GROUP_AIM_MAX_DISTANCE.get());
         }
 
         if (includeBlacklist) {
@@ -363,6 +446,7 @@ public final class PresetStore {
         }
         if (includeAoeWeapons) {
             preset.aoeWeapons = new ArrayList<>(AoeWeaponStore.snapshot());
+            preset.projectileWeapons = new ArrayList<>(ProjectileWeaponStore.snapshot());
         }
         return preset;
     }
@@ -487,6 +571,7 @@ public final class PresetStore {
         private List<String> blacklist;
         private Map<String, AimOverride> aimOverrides;
         private List<String> aoeWeapons;
+        private List<String> projectileWeapons;
 
         public String name() { return this.name; }
         public boolean includesBlacklist() { return this.includeBlacklist; }

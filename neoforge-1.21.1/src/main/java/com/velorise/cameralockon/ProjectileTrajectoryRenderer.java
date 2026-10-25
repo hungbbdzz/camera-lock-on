@@ -8,8 +8,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.BowItem;
+import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TridentItem;
+
+import java.util.Collections;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
@@ -50,16 +55,23 @@ public final class ProjectileTrajectoryRenderer {
         Vec3 launchDirection = applyPitchOffset(aim.subtract(start), profile.pitchOffsetDegrees);
         if (launchDirection.lengthSqr() < 1.0E-8D) return;
 
+        List<MultipartDamageBoxResolver.DamageBox> targetDamageBoxes =
+                lockedTarget != null && !lockedTarget.isRemoved()
+                        ? MultipartDamageBoxResolver.resolve(lockedTarget)
+                        : Collections.emptyList();
+
         double currentSpeed = profile.currentSpeed(player, stack);
         if (currentSpeed > 0.08D) {
-            simulateAndDraw(mc, poseStack, camera, player, start, launchDirection, currentSpeed,
+            simulateAndDraw(mc, poseStack, camera, player, lockedTarget, targetDamageBoxes,
+                    start, launchDirection, currentSpeed,
                     profile.gravity, profile.drag, 0.15F, 0.95F, 0.85F, 0.88F);
         }
 
         if (profile.bow
                 && CameraLockOnConfig.TRAJECTORY_FULL_CHARGE.get()
                 && currentSpeed < 2.92D) {
-            simulateAndDraw(mc, poseStack, camera, player, start, launchDirection, 3.0D,
+            simulateAndDraw(mc, poseStack, camera, player, lockedTarget, targetDamageBoxes,
+                    start, launchDirection, 3.0D,
                     profile.gravity, profile.drag, 0.55F, 0.75F, 1.0F, 0.34F);
         }
     }
@@ -79,14 +91,15 @@ public final class ProjectileTrajectoryRenderer {
 
     private static ProjectileProfile profileFor(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return null;
-        if (stack.is(Items.BOW)) return ProjectileProfile.BOW;
-        if (stack.is(Items.CROSSBOW)) return ProjectileProfile.CROSSBOW;
-        if (stack.is(Items.TRIDENT)) return ProjectileProfile.TRIDENT;
+        if (stack.getItem() instanceof BowItem) return ProjectileProfile.BOW;
+        if (stack.getItem() instanceof CrossbowItem) return ProjectileProfile.CROSSBOW;
+        if (stack.getItem() instanceof TridentItem) return ProjectileProfile.TRIDENT;
         if (stack.is(Items.ENDER_PEARL)) return ProjectileProfile.ENDER_PEARL;
         if (stack.is(Items.SNOWBALL)) return ProjectileProfile.SNOWBALL;
         if (stack.is(Items.EGG)) return ProjectileProfile.EGG;
         if (stack.is(Items.SPLASH_POTION) || stack.is(Items.LINGERING_POTION)) return ProjectileProfile.POTION;
         if (stack.is(Items.EXPERIENCE_BOTTLE)) return ProjectileProfile.EXPERIENCE_BOTTLE;
+        if (ProjectileWeaponStore.contains(stack.getItem())) return ProjectileProfile.CUSTOM_PROJECTILE;
         return null;
     }
 
@@ -105,6 +118,8 @@ public final class ProjectileTrajectoryRenderer {
     }
 
     private static void simulateAndDraw(Minecraft mc, PoseStack poseStack, Camera camera, LocalPlayer player,
+                                        LivingEntity lockedTarget,
+                                        List<MultipartDamageBoxResolver.DamageBox> targetDamageBoxes,
                                         Vec3 start, Vec3 launchDirection, double speed,
                                         double gravity, double drag,
                                         float red, float green, float blue, float alpha) {
@@ -133,7 +148,7 @@ public final class ProjectileTrajectoryRenderer {
                 proposed = position.add(proposed.subtract(position).scale(remaining / proposedDistance));
             }
 
-            SegmentImpact impact = findNearestImpact(mc, player, position, proposed);
+            SegmentImpact impact = findNearestImpact(mc, player, lockedTarget, targetDamageBoxes, position, proposed);
             Vec3 next = impact == null ? proposed : impact.location;
 
             drawLine(consumer, matrix, position, next, red, green, blue, alpha);
@@ -175,7 +190,14 @@ public final class ProjectileTrajectoryRenderer {
         poseStack.popPose();
     }
 
-    private static SegmentImpact findNearestImpact(Minecraft mc, LocalPlayer player, Vec3 from, Vec3 to) {
+    private static SegmentImpact findNearestImpact(
+            Minecraft mc,
+            LocalPlayer player,
+            LivingEntity lockedTarget,
+            List<MultipartDamageBoxResolver.DamageBox> targetDamageBoxes,
+            Vec3 from,
+            Vec3 to
+    ) {
         HitResult blockHit = mc.level.clip(new ClipContext(
                 from,
                 to,
@@ -203,9 +225,8 @@ public final class ProjectileTrajectoryRenderer {
                 Math.max(from.z, to.z)
         ).inflate(ENTITY_HIT_PADDING + 0.25D);
 
-        LivingEntity lockedTarget = LockOnController.getLockedTarget();
-        if (lockedTarget != null && !lockedTarget.isRemoved()) {
-            for (MultipartDamageBoxResolver.DamageBox damageBox : MultipartDamageBoxResolver.resolve(lockedTarget)) {
+        if (!targetDamageBoxes.isEmpty()) {
+            for (MultipartDamageBoxResolver.DamageBox damageBox : targetDamageBoxes) {
                 Optional<Vec3> clipped = damageBox.box().inflate(ENTITY_HIT_PADDING).clip(from, to);
                 if (clipped.isEmpty()) continue;
 
@@ -291,6 +312,7 @@ public final class ProjectileTrajectoryRenderer {
         private static final ProjectileProfile EGG = new ProjectileProfile(false, 1.5D, 0.03D, 0.99D, 0.0D);
         private static final ProjectileProfile POTION = new ProjectileProfile(false, 0.5D, 0.05D, 0.99D, -20.0D);
         private static final ProjectileProfile EXPERIENCE_BOTTLE = new ProjectileProfile(false, 0.7D, 0.07D, 0.99D, -20.0D);
+        private static final ProjectileProfile CUSTOM_PROJECTILE = new ProjectileProfile(false, 3.0D, 0.05D, 0.99D, 0.0D);
 
         private final boolean bow;
         private final double speed;
@@ -307,8 +329,15 @@ public final class ProjectileTrajectoryRenderer {
         }
 
         private double currentSpeed(LocalPlayer player, ItemStack stack) {
-            if (!this.bow) return this.speed;
-            if (!player.isUsingItem() || !player.getUseItem().is(Items.BOW)) return 0.0D;
+            if (!this.bow) {
+                if (this == CROSSBOW
+                        && !CrossbowItem.isCharged(stack)
+                        && (!player.isUsingItem() || !(player.getUseItem().getItem() instanceof CrossbowItem))) {
+                    return 0.0D;
+                }
+                return this.speed;
+            }
+            if (!player.isUsingItem() || !(player.getUseItem().getItem() instanceof BowItem)) return 0.0D;
             float charge = player.getTicksUsingItem() / 20.0F;
             charge = (charge * charge + charge * 2.0F) / 3.0F;
             return Math.max(0.0D, Math.min(1.0D, charge)) * 3.0D;

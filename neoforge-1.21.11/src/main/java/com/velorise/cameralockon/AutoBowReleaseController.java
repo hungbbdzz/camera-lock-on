@@ -38,7 +38,9 @@ public final class AutoBowReleaseController {
         // Recharge and release are separate features. Recharge may begin a new
         // draw while the physical Use key remains held, even if auto-release is off.
         if (!player.isUsingItem()) {
-            if (CameraLockOnConfig.AUTO_RECHARGE_BOW.get() && actionCooldownTicks == 0) {
+            if (CameraLockOnConfig.AUTO_RECHARGE_BOW.get()
+                    && actionCooldownTicks == 0
+                    && hasRangedAmmo(player, stack)) {
                 minecraft.gameMode.useItem(player, hand);
                 actionCooldownTicks = 2;
             }
@@ -58,7 +60,7 @@ public final class AutoBowReleaseController {
 
     private static void tickCrossbow(Minecraft minecraft, LocalPlayer player,
                                      InteractionHand hand, ItemStack stack) {
-        if (!false /* auto crossbow cycle disabled */ || actionCooldownTicks > 0) return;
+        if (!CameraLockOnConfig.AUTO_CYCLE_CROSSBOW.get() || actionCooldownTicks > 0) return;
 
         if (!CrossbowItem.isCharged(stack)) {
             if (player.isUsingItem()) {
@@ -68,7 +70,7 @@ public final class AutoBowReleaseController {
                     minecraft.gameMode.releaseUsingItem(player);
                     actionCooldownTicks = 2;
                 }
-            } else {
+            } else if (hasRangedAmmo(player, stack)) {
                 minecraft.gameMode.useItem(player, hand);
                 actionCooldownTicks = 2;
             }
@@ -106,6 +108,10 @@ public final class AutoBowReleaseController {
         if (minecraft.options.keyUse.isDown()) return true;
         long window = minecraft.getWindow().handle();
         return GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+    }
+
+    private static boolean hasRangedAmmo(LocalPlayer player, ItemStack weapon) {
+        return player.getAbilities().instabuild || !player.getProjectile(weapon).isEmpty();
     }
 
     private static InteractionHand findRangedHand(LocalPlayer player) {

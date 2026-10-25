@@ -13,22 +13,17 @@ echo ====================================================
 echo       Camera Lock-On - NeoForge Dev Client
 echo ====================================================
 echo   1) NeoForge 1.21.11
-echo   2) NeoForge 1.21.4
-echo   3) NeoForge 1.21.1
+echo   2) NeoForge 1.21.1
 echo   0) Exit
 echo ----------------------------------------------------
-set /p "CHOICE=Select version to run [1-3]: "
+set /p "CHOICE=Select version to run [1-2]: "
 
 :HANDLE_CHOICE
 if "%CHOICE%"=="1" goto :RUN_12111
 if "%CHOICE%"=="1.21.11" goto :RUN_12111
 if "%CHOICE%"=="12111" goto :RUN_12111
 
-if "%CHOICE%"=="2" goto :RUN_1214
-if "%CHOICE%"=="1.21.4" goto :RUN_1214
-if "%CHOICE%"=="1214" goto :RUN_1214
-
-if "%CHOICE%"=="3" goto :RUN_1211
+if "%CHOICE%"=="2" goto :RUN_1211
 if "%CHOICE%"=="1.21.1" goto :RUN_1211
 if "%CHOICE%"=="1211" goto :RUN_1211
 
@@ -40,10 +35,6 @@ goto :MENU
 
 :RUN_12111
 set "TARGET_DIR=neoforge-1.21.11"
-goto :START_CLIENT
-
-:RUN_1214
-set "TARGET_DIR=neoforge-1.21.4"
 goto :START_CLIENT
 
 :RUN_1211

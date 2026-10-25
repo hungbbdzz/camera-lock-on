@@ -2,7 +2,7 @@
 
 Camera Lock-On is a lightweight, highly configurable client-side target lock-on mod for Minecraft.
 
-It adds action-game-style targeting without changing attack reach, damage, entity AI, or server-side combat rules. Version 2.0.1 expands the mod with projectile assistance, prediction, configurable third-person camera support, improved camera smoothing, and stricter line-of-sight controls.
+It adds action-game-style targeting without changing attack reach, damage, entity AI, or server-side combat rules. Version 2.0.2 expands the mod with projectile assistance, prediction, configurable third-person camera support, improved camera smoothing, and stricter line-of-sight controls.
 
 ## Supported Platforms
 
@@ -10,8 +10,6 @@ It adds action-game-style targeting without changing attack reach, damage, entit
 |---|---|---|---|
 | 1.21.11 | NeoForge | Java 21 | `neoforge-1.21.11` |
 | 1.21.11 | Fabric | Java 21 | `fabric-1.21.11` |
-| 1.21.4 | NeoForge | Java 21 | `neoforge-1.21.4` |
-| 1.21.4 | Fabric | Java 21 | `fabric-1.21.4` |
 | 1.21.1 | NeoForge | Java 21 | `neoforge-1.21.1` |
 | 1.21.1 | Fabric | Java 21 | `fabric-1.21.1` |
 | 1.20.1 | Forge | Java 17 | `forge-1.20.1` |
@@ -22,7 +20,7 @@ Camera rotation, projectile assistance, persistent target information, or other 
 
 ## Requirements
 
-- **Minecraft 1.21.11 / 1.21.4 / 1.21.1**: Java 21, NeoForge or Fabric (with Fabric API and Fabric Loader >= 0.17.3 for 1.21.11). Mod Menu is optional.
+- **Minecraft 1.21.11 / 1.21.1**: Java 21, NeoForge or Fabric (with Fabric API and Fabric Loader >= 0.17.3 for 1.21.11). Mod Menu is optional.
 - **Minecraft 1.20.1**: Java 17, Minecraft Forge.
 
 ## Quick Start
@@ -385,9 +383,23 @@ The main configuration backend depends on the selected loader, but the in-game s
 
 ## Changelog
 
+### 2.0.2 — Bug Fixes & Refinements
+
+- Fixed `MultipartDamageBoxResolver` reflection recursion and vehicle/player hitbox misidentification.
+- Fixed `ProjectileSettingsScreen` scrollbar and mouse scrolling across all supported versions.
+- Added previous target switching keybind (`SWITCH_TARGET_PREVIOUS_KEY`) and directional target cycling.
+- Fixed queued lock input when closing GUI screens on Fabric.
+- Restored true third-person camera rotation on Forge 1.20.1 and 360° entity preview rotation on 1.21.11.
+- Enforced Line-of-Sight visibility checks for reticle rendering on NeoForge.
+- Added Trident and offhand weapon support in projectile aim calculations.
+- Added ammo checks before automatic bow and crossbow recharging.
+- Excluded ridden vehicles, player pets, team allies, and invisible entities from targeting rules.
+- Optimized projectile trajectory simulation, frame-rate independent aim smoothing, and adaptive aim calibration.
+- Removed deprecated Minecraft 1.21.4 ports.
+
 ### 2.0.1 — Projectile & Third-Person Update
 
-- Added support for Minecraft 1.21.4 and 1.21.11 ("Mounts of Mayhem") on both Fabric and NeoForge.
+- Added support for Minecraft 1.21.11 ("Mounts of Mayhem") on both Fabric and NeoForge.
 - Added projectile weapon and prediction support.
 - Added configurable recognition for modded ranged weapons.
 - Added bow auto-release and auto-recharge assistance.
