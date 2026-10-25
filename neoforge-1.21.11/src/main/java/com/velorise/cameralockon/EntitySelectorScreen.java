@@ -794,23 +794,16 @@ public class EntitySelectorScreen extends Screen {
             this.previewEntity.setXRot(0.0F);
             this.previewEntity.xRotO = 0.0F;
 
-            float entityScale = Math.max(0.001F, this.previewEntity.getScale());
-            Vector3f translation = new Vector3f(
-                    0.0F,
-                    this.previewEntity.getBbHeight() / 2.0F,
-                    0.0F
-            );
-            Quaternionf pose = new Quaternionf().rotateZ((float) Math.PI);
-            InventoryScreen.renderEntityInInventory(
+            InventoryScreen.renderEntityInInventoryFollowsMouse(
                     graphics,
                     this.previewLeft,
                     this.previewTop,
                     this.previewLeft + PREVIEW_WIDTH,
                     this.previewTop + PREVIEW_HEIGHT,
-                    scale / entityScale,
-                    translation,
-                    pose,
-                    null,
+                    scale,
+                    0.0F,
+                    (float) (this.previewLeft + PREVIEW_WIDTH / 2.0F - this.previewYaw * 2.0F),
+                    (float) (this.previewTop + PREVIEW_HEIGHT / 2.0F),
                     this.previewEntity
             );
         } catch (Throwable ignored) {

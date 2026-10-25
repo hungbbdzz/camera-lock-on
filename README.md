@@ -389,7 +389,7 @@ The main configuration backend depends on the selected loader, but the in-game s
 - Fixed `ProjectileSettingsScreen` scrollbar and mouse scrolling across all supported versions.
 - Added previous target switching keybind (`SWITCH_TARGET_PREVIOUS_KEY`) and directional target cycling.
 - Fixed queued lock input when closing GUI screens on Fabric.
-- Restored true third-person camera rotation on Forge 1.20.1 and 360° entity preview rotation on 1.21.11.
+- Restored true third-person camera rotation on Forge 1.20.1.
 - Enforced Line-of-Sight visibility checks for reticle rendering on NeoForge.
 - Added Trident and offhand weapon support in projectile aim calculations.
 - Added ammo checks before automatic bow and crossbow recharging.
