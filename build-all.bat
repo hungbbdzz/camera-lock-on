@@ -26,6 +26,14 @@ $OriginalPath = $env:Path
 function Use-JavaHome([string]$VariableName, [string]$Label) {
     $candidate = [Environment]::GetEnvironmentVariable($VariableName)
 
+    if ([string]::IsNullOrWhiteSpace($candidate)) {
+        if ($VariableName -eq 'JAVA21_HOME' -and (Test-Path 'C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot\bin\java.exe')) {
+            $candidate = 'C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot'
+        } elseif ($VariableName -eq 'JAVA17_HOME' -and (Test-Path 'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot\bin\java.exe')) {
+            $candidate = 'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot'
+        }
+    }
+
     if (-not [string]::IsNullOrWhiteSpace($candidate)) {
         if (-not (Test-Path (Join-Path $candidate 'bin\java.exe'))) {
             throw "$VariableName points to an invalid JDK directory: $candidate"
