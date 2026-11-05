@@ -29,9 +29,10 @@ public final class TargetCycleController {
             return;
         }
 
-        while (LockOnController.SWITCH_TARGET_KEY.consumeClick()) {
+        while (LockOnController.consumeSwitchTargetClick()) {
             LivingEntity current = LockOnController.getLockedTarget();
             if (!LockOnController.isActive() || current == null) {
+                LockOnController.acquireInitialTarget(player, level);
                 continue;
             }
 
@@ -41,9 +42,10 @@ public final class TargetCycleController {
             }
         }
 
-        while (LockOnController.SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+        while (LockOnController.consumeSwitchTargetPreviousClick()) {
             LivingEntity current = LockOnController.getLockedTarget();
             if (!LockOnController.isActive() || current == null) {
+                LockOnController.acquireInitialTarget(player, level);
                 continue;
             }
 
@@ -52,6 +54,14 @@ public final class TargetCycleController {
                 LockOnController.requestLock(previous, LockOnController.LockReason.SWITCH, true);
             }
         }
+    }
+
+    public static LivingEntity findNextTarget(
+            LocalPlayer player,
+            ClientLevel level,
+            LivingEntity current
+    ) {
+        return findNextTarget(player, level, current, true);
     }
 
     public static LivingEntity findPreviousTarget(

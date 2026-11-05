@@ -207,11 +207,56 @@ public final class LockOnController {
     private static Vec3 lastEffectiveAimPoint = Vec3.ZERO;
     private static int groupTargetCount = 1;
 
+    private static int pendingRawLockKeyPresses;
+    private static boolean lockMouseWasDown;
+    private static boolean lockMousePressedThisTick;
+
+    private static int pendingSwitchTargetClicks;
+    private static int pendingSwitchTargetPreviousClicks;
+
     private static float deadZoneSteeringBlend;
     private static boolean deadZoneOutside;
     private static boolean deadZoneWasEnabled;
 
     private LockOnController() {
+    }
+
+    /** Called by the Fabric mouse hook when the configured lock key is a mouse button. */
+    public static void queueRawLockKeyPress() {
+        pendingRawLockKeyPresses++;
+    }
+
+    /** Called by the keyboard hook when the switch target key is pressed. */
+    public static void queueSwitchTargetKeyPress() {
+        pendingSwitchTargetClicks++;
+    }
+
+    /** Called by the keyboard hook when the previous switch target key is pressed. */
+    public static void queueSwitchTargetPreviousKeyPress() {
+        pendingSwitchTargetPreviousClicks++;
+    }
+
+    public static boolean consumeSwitchTargetClick() {
+        if (pendingSwitchTargetClicks > 0) {
+            pendingSwitchTargetClicks--;
+            return true;
+        }
+        return SWITCH_TARGET_KEY.consumeClick();
+    }
+
+    public static boolean consumeSwitchTargetPreviousClick() {
+        if (pendingSwitchTargetPreviousClicks > 0) {
+            pendingSwitchTargetPreviousClicks--;
+            return true;
+        }
+        return SWITCH_TARGET_PREVIOUS_KEY.consumeClick();
+    }
+
+    public static void acquireInitialTarget(LocalPlayer player, ClientLevel level) {
+        LivingEntity target = findTarget(player, level, null);
+        if (target != null) {
+            lockTarget(target, LockReason.SWITCH);
+        }
     }
 
     public static void clientTick() {
@@ -229,14 +274,18 @@ public final class LockOnController {
 
         while (OPEN_CONFIG_KEY.consumeClick()) {
             minecraft.setScreen(new LockOnConfigScreen(minecraft.screen));
+            discardPendingLockInput(minecraft);
             resetAutoLockCandidate();
             return;
         }
 
         if (minecraft.screen != null) {
+            discardPendingLockInput(minecraft);
             resetAutoLockCandidate();
             return;
         }
+
+        pollConfiguredLockMouseButton(minecraft);
 
         ThirdPersonCameraController.tick();
         handleLockKey(player, level);
@@ -278,7 +327,22 @@ public final class LockOnController {
     }
 
     private static void handleLockKey(LocalPlayer player, ClientLevel level) {
+        int mappedClicks = 0;
         while (LOCK_ON_KEY.consumeClick()) {
+            mappedClicks++;
+        }
+
+        int rawMouseClicks = pendingRawLockKeyPresses;
+        pendingRawLockKeyPresses = 0;
+
+        int polledMouseClicks = lockMousePressedThisTick ? 1 : 0;
+        lockMousePressedThisTick = false;
+
+        // Fabric may not dispatch a normal KeyMapping click when the same mouse
+        // button is also used by vanilla Pick Block. Accept any of the three
+        // input paths, but count one physical press only once.
+        int clicks = Math.max(mappedClicks, Math.max(rawMouseClicks, polledMouseClicks));
+        for (int i = 0; i < clicks; i++) {
             if (active) {
                 unlockTarget(true, LockReason.MANUAL);
                 continue;
@@ -291,20 +355,75 @@ public final class LockOnController {
         }
     }
 
-    private static void handleSwitchTargetKey(LocalPlayer player, ClientLevel level) {
+    /**
+     * Polls the mouse button currently assigned to Lock-On.
+     *
+     * This is a fallback independent of KeyMapping's click counter and of the
+     * MouseHandler mixin, so Middle Mouse Button still works when it conflicts
+     * with Minecraft's Pick Block binding.
+     */
+    private static void pollConfiguredLockMouseButton(Minecraft minecraft) {
+        boolean down = false;
+        long window = minecraft.getWindow().getWindow();
+
+        for (int button = GLFW.GLFW_MOUSE_BUTTON_1;
+             button <= GLFW.GLFW_MOUSE_BUTTON_LAST;
+             button++) {
+            if (!LOCK_ON_KEY.matchesMouse(button)) {
+                continue;
+            }
+
+            down = GLFW.glfwGetMouseButton(window, button) == GLFW.GLFW_PRESS;
+            break;
+        }
+
+        lockMousePressedThisTick = down && !lockMouseWasDown;
+        lockMouseWasDown = down;
+    }
+
+    private static void discardPendingLockInput(Minecraft minecraft) {
+        while (LOCK_ON_KEY.consumeClick()) {
+            // Drain clicks queued while a GUI screen was active
+        }
         while (SWITCH_TARGET_KEY.consumeClick()) {
+        }
+        while (SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+        }
+        pendingRawLockKeyPresses = 0;
+        pendingSwitchTargetClicks = 0;
+        pendingSwitchTargetPreviousClicks = 0;
+        lockMousePressedThisTick = false;
+        boolean down = false;
+        long window = minecraft.getWindow().getWindow();
+        for (int button = GLFW.GLFW_MOUSE_BUTTON_1; button <= GLFW.GLFW_MOUSE_BUTTON_LAST; button++) {
+            if (!LOCK_ON_KEY.matchesMouse(button)) {
+                continue;
+            }
+            down = GLFW.glfwGetMouseButton(window, button) == GLFW.GLFW_PRESS;
+            break;
+        }
+        lockMouseWasDown = down;
+    }
+
+    private static void handleSwitchTargetKey(LocalPlayer player, ClientLevel level) {
+        while (consumeSwitchTargetClick()) {
             if (!active || lockedTarget == null) {
+                acquireInitialTarget(player, level);
                 continue;
             }
 
             LivingEntity target = findSwitchTarget(player, level, lockedTarget);
+            if (target == null) {
+                target = TargetCycleController.findNextTarget(player, level, lockedTarget);
+            }
             if (target != null) {
                 lockTarget(target, LockReason.SWITCH);
             }
         }
 
-        while (SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+        while (consumeSwitchTargetPreviousClick()) {
             if (!active || lockedTarget == null) {
+                acquireInitialTarget(player, level);
                 continue;
             }
 
@@ -1305,6 +1424,11 @@ public final class LockOnController {
     }
 
     private static void clearAllState() {
+        pendingRawLockKeyPresses = 0;
+        pendingSwitchTargetClicks = 0;
+        pendingSwitchTargetPreviousClicks = 0;
+        lockMouseWasDown = false;
+        lockMousePressedThisTick = false;
         lockedTarget = null;
         previousLockedTarget = null;
         active = false;

@@ -5,6 +5,7 @@
   "client": [
     "GameRendererMixin",
     "MouseHandlerMixin",
+    "KeyboardHandlerMixin",
     "CameraPositionMixin",
     "EntityOutlineMixin"
   ],

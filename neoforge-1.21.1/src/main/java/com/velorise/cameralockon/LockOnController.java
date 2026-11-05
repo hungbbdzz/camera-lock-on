@@ -22,23 +22,11 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.Optional;
 
-@EventBusSubscriber(
-        modid = CameraLockOn.MODID,
-        bus = EventBusSubscriber.Bus.GAME,
-        value = Dist.CLIENT
-)
 public final class LockOnController {
     private static final double VIEW_CONE_DOT_THRESHOLD = 0.7D;
 
@@ -219,6 +207,13 @@ public final class LockOnController {
     private static Vec3 lastEffectiveAimPoint = Vec3.ZERO;
     private static int groupTargetCount = 1;
 
+    private static int pendingRawLockKeyPresses;
+    private static boolean lockMouseWasDown;
+    private static boolean lockMousePressedThisTick;
+
+    private static int pendingSwitchTargetClicks;
+    private static int pendingSwitchTargetPreviousClicks;
+
     private static float deadZoneSteeringBlend;
     private static boolean deadZoneOutside;
     private static boolean deadZoneWasEnabled;
@@ -226,8 +221,45 @@ public final class LockOnController {
     private LockOnController() {
     }
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    /** Called by the Fabric mouse hook when the configured lock key is a mouse button. */
+    public static void queueRawLockKeyPress() {
+        pendingRawLockKeyPresses++;
+    }
+
+    /** Called by the keyboard hook when the switch target key is pressed. */
+    public static void queueSwitchTargetKeyPress() {
+        pendingSwitchTargetClicks++;
+    }
+
+    /** Called by the keyboard hook when the previous switch target key is pressed. */
+    public static void queueSwitchTargetPreviousKeyPress() {
+        pendingSwitchTargetPreviousClicks++;
+    }
+
+    public static boolean consumeSwitchTargetClick() {
+        if (pendingSwitchTargetClicks > 0) {
+            pendingSwitchTargetClicks--;
+            return true;
+        }
+        return SWITCH_TARGET_KEY.consumeClick();
+    }
+
+    public static boolean consumeSwitchTargetPreviousClick() {
+        if (pendingSwitchTargetPreviousClicks > 0) {
+            pendingSwitchTargetPreviousClicks--;
+            return true;
+        }
+        return SWITCH_TARGET_PREVIOUS_KEY.consumeClick();
+    }
+
+    public static void acquireInitialTarget(LocalPlayer player, ClientLevel level) {
+        LivingEntity target = findTarget(player, level, null);
+        if (target != null) {
+            lockTarget(target, LockReason.SWITCH);
+        }
+    }
+
+    public static void clientTick() {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         ClientLevel level = minecraft.level;
@@ -242,14 +274,18 @@ public final class LockOnController {
 
         while (OPEN_CONFIG_KEY.consumeClick()) {
             minecraft.setScreen(new LockOnConfigScreen(minecraft.screen));
+            discardPendingLockInput(minecraft);
             resetAutoLockCandidate();
             return;
         }
 
         if (minecraft.screen != null) {
+            discardPendingLockInput(minecraft);
             resetAutoLockCandidate();
             return;
         }
+
+        pollConfiguredLockMouseButton(minecraft);
 
         ThirdPersonCameraController.tick();
         handleLockKey(player, level);
@@ -259,16 +295,10 @@ public final class LockOnController {
         updateCurrentTarget(player, level);
         AutoBowReleaseController.tick(minecraft, player);
         AdaptiveAimCalibration.tick(minecraft, player);
-        TargetOutlineController.tick();
         updateAutoLock(player, level);
     }
 
-    @SubscribeEvent
-    public static void onInteractionKey(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!event.isAttack()) {
-            return;
-        }
-
+    public static void onEntityAttacked(LivingEntity target) {
         CameraLockOnConfig.LockOnHitMode mode =
                 CameraLockOnConfig.LockOnHitMode.fromConfig(
                         CameraLockOnConfig.LOCK_ON_HIT_MODE.get()
@@ -281,8 +311,7 @@ public final class LockOnController {
         if (minecraft.player == null
                 || minecraft.level == null
                 || minecraft.screen != null
-                || !(minecraft.hitResult instanceof EntityHitResult entityHit)
-                || !(entityHit.getEntity() instanceof LivingEntity target)) {
+                || target == null) {
             return;
         }
 
@@ -298,7 +327,22 @@ public final class LockOnController {
     }
 
     private static void handleLockKey(LocalPlayer player, ClientLevel level) {
+        int mappedClicks = 0;
         while (LOCK_ON_KEY.consumeClick()) {
+            mappedClicks++;
+        }
+
+        int rawMouseClicks = pendingRawLockKeyPresses;
+        pendingRawLockKeyPresses = 0;
+
+        int polledMouseClicks = lockMousePressedThisTick ? 1 : 0;
+        lockMousePressedThisTick = false;
+
+        // Fabric may not dispatch a normal KeyMapping click when the same mouse
+        // button is also used by vanilla Pick Block. Accept any of the three
+        // input paths, but count one physical press only once.
+        int clicks = Math.max(mappedClicks, Math.max(rawMouseClicks, polledMouseClicks));
+        for (int i = 0; i < clicks; i++) {
             if (active) {
                 unlockTarget(true, LockReason.MANUAL);
                 continue;
@@ -311,20 +355,75 @@ public final class LockOnController {
         }
     }
 
-    private static void handleSwitchTargetKey(LocalPlayer player, ClientLevel level) {
+    /**
+     * Polls the mouse button currently assigned to Lock-On.
+     *
+     * This is a fallback independent of KeyMapping's click counter and of the
+     * MouseHandler mixin, so Middle Mouse Button still works when it conflicts
+     * with Minecraft's Pick Block binding.
+     */
+    private static void pollConfiguredLockMouseButton(Minecraft minecraft) {
+        boolean down = false;
+        long window = minecraft.getWindow().getWindow();
+
+        for (int button = GLFW.GLFW_MOUSE_BUTTON_1;
+             button <= GLFW.GLFW_MOUSE_BUTTON_LAST;
+             button++) {
+            if (!LOCK_ON_KEY.matchesMouse(button)) {
+                continue;
+            }
+
+            down = GLFW.glfwGetMouseButton(window, button) == GLFW.GLFW_PRESS;
+            break;
+        }
+
+        lockMousePressedThisTick = down && !lockMouseWasDown;
+        lockMouseWasDown = down;
+    }
+
+    private static void discardPendingLockInput(Minecraft minecraft) {
+        while (LOCK_ON_KEY.consumeClick()) {
+            // Drain clicks queued while a GUI screen was active
+        }
         while (SWITCH_TARGET_KEY.consumeClick()) {
+        }
+        while (SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+        }
+        pendingRawLockKeyPresses = 0;
+        pendingSwitchTargetClicks = 0;
+        pendingSwitchTargetPreviousClicks = 0;
+        lockMousePressedThisTick = false;
+        boolean down = false;
+        long window = minecraft.getWindow().getWindow();
+        for (int button = GLFW.GLFW_MOUSE_BUTTON_1; button <= GLFW.GLFW_MOUSE_BUTTON_LAST; button++) {
+            if (!LOCK_ON_KEY.matchesMouse(button)) {
+                continue;
+            }
+            down = GLFW.glfwGetMouseButton(window, button) == GLFW.GLFW_PRESS;
+            break;
+        }
+        lockMouseWasDown = down;
+    }
+
+    private static void handleSwitchTargetKey(LocalPlayer player, ClientLevel level) {
+        while (consumeSwitchTargetClick()) {
             if (!active || lockedTarget == null) {
+                acquireInitialTarget(player, level);
                 continue;
             }
 
             LivingEntity target = findSwitchTarget(player, level, lockedTarget);
+            if (target == null) {
+                target = TargetCycleController.findNextTarget(player, level, lockedTarget);
+            }
             if (target != null) {
                 lockTarget(target, LockReason.SWITCH);
             }
         }
 
-        while (SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+        while (consumeSwitchTargetPreviousClick()) {
             if (!active || lockedTarget == null) {
+                acquireInitialTarget(player, level);
                 continue;
             }
 
@@ -993,27 +1092,7 @@ public final class LockOnController {
         wasLockedLastFrame = true;
     }
 
-    @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
-            return;
-        }
-        Minecraft minecraft = Minecraft.getInstance();
-        Camera camera = minecraft.gameRenderer.getMainCamera();
-        PoseStack poseStack = event.getPoseStack();
-        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(true);
-
-        renderReticleIfVisible(minecraft, poseStack, camera, partialTick);
-        ThirdPersonAimRayRenderer.render(poseStack, camera, partialTick);
-        ProjectileTrajectoryRenderer.render(poseStack, camera, partialTick);
-    }
-
-    private static void renderReticleIfVisible(
-            Minecraft minecraft,
-            PoseStack poseStack,
-            Camera camera,
-            float partialTick
-    ) {
+    public static void renderReticle(PoseStack poseStack, Camera camera, float partialTick) {
         if (!canRenderLockedTargetInfo()
                 || !active
                 || lockedTarget == null
@@ -1021,6 +1100,7 @@ public final class LockOnController {
             return;
         }
 
+        Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
         LocalPlayer player = minecraft.player;
         if (level == null || player == null || lockedTarget.level() != level) {
@@ -1344,6 +1424,11 @@ public final class LockOnController {
     }
 
     private static void clearAllState() {
+        pendingRawLockKeyPresses = 0;
+        pendingSwitchTargetClicks = 0;
+        pendingSwitchTargetPreviousClicks = 0;
+        lockMouseWasDown = false;
+        lockMousePressedThisTick = false;
         lockedTarget = null;
         previousLockedTarget = null;
         active = false;
@@ -1537,41 +1622,5 @@ public final class LockOnController {
         HIT_TARGET,
         ATTACKER,
         LOST
-    }
-
-    @EventBusSubscriber(
-            modid = CameraLockOn.MODID,
-            bus = EventBusSubscriber.Bus.MOD,
-            value = Dist.CLIENT
-    )
-    public static final class ModBusEvents {
-        private ModBusEvents() {
-        }
-
-        @SubscribeEvent
-        public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
-            event.register(LOCK_ON_KEY);
-            event.register(SWITCH_TARGET_KEY);
-            event.register(SWITCH_TARGET_PREVIOUS_KEY);
-            event.register(PIN_TARGET_TYPE_KEY);
-            event.register(OPEN_CONFIG_KEY);
-            event.register(TOGGLE_AUTO_LOCK_KEY);
-            event.register(TOGGLE_SMART_LOCK_KEY);
-            event.register(TOGGLE_HOSTILE_ONLY_KEY);
-            event.register(TOGGLE_HUD_KEY);
-            event.register(CYCLE_TARGET_PRIORITY_KEY);
-            event.register(CYCLE_SWITCH_MODE_KEY);
-            event.register(CLEAR_PIN_KEY);
-            event.register(CYCLE_CAMERA_POSITION_KEY);
-            event.register(TOGGLE_AUTO_RELEASE_BOW_KEY);
-            event.register(TOGGLE_AUTO_RECHARGE_BOW_KEY);
-            event.register(CYCLE_PROJECTILE_ASSIST_KEY);
-            event.register(CAMERA_X_DECREASE_KEY);
-            event.register(CAMERA_X_INCREASE_KEY);
-            event.register(CAMERA_Y_DECREASE_KEY);
-            event.register(CAMERA_Y_INCREASE_KEY);
-            event.register(CAMERA_Z_DECREASE_KEY);
-            event.register(CAMERA_Z_INCREASE_KEY);
-        }
     }
 }

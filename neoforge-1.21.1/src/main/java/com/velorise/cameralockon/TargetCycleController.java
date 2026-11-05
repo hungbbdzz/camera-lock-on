@@ -8,14 +8,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.EventPriority;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /** Implements the optional stable clockwise target cycle while preserving the original Smart mode. */
-@EventBusSubscriber(modid = CameraLockOn.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public final class TargetCycleController {
     private static final double WIDE_VIEW_DOT_THRESHOLD = -0.20D;
     private static final double MINIMUM_ANGLE_STEP = 0.25D;
@@ -23,8 +17,7 @@ public final class TargetCycleController {
     private TargetCycleController() {
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void clientTick() {
         if (ClientFeatureStore.getSwitchTargetMode() != ClientFeatureStore.SwitchTargetMode.CYCLE) {
             return;
         }
@@ -36,9 +29,10 @@ public final class TargetCycleController {
             return;
         }
 
-        while (LockOnController.SWITCH_TARGET_KEY.consumeClick()) {
+        while (LockOnController.consumeSwitchTargetClick()) {
             LivingEntity current = LockOnController.getLockedTarget();
             if (!LockOnController.isActive() || current == null) {
+                LockOnController.acquireInitialTarget(player, level);
                 continue;
             }
 
@@ -48,9 +42,10 @@ public final class TargetCycleController {
             }
         }
 
-        while (LockOnController.SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+        while (LockOnController.consumeSwitchTargetPreviousClick()) {
             LivingEntity current = LockOnController.getLockedTarget();
             if (!LockOnController.isActive() || current == null) {
+                LockOnController.acquireInitialTarget(player, level);
                 continue;
             }
 
@@ -59,6 +54,14 @@ public final class TargetCycleController {
                 LockOnController.requestLock(previous, LockOnController.LockReason.SWITCH, true);
             }
         }
+    }
+
+    public static LivingEntity findNextTarget(
+            LocalPlayer player,
+            ClientLevel level,
+            LivingEntity current
+    ) {
+        return findNextTarget(player, level, current, true);
     }
 
     public static LivingEntity findPreviousTarget(
