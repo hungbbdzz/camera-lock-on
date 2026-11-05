@@ -236,20 +236,24 @@ public final class LockOnController {
         pendingSwitchTargetPreviousClicks++;
     }
 
-    public static boolean consumeSwitchTargetClick() {
-        if (pendingSwitchTargetClicks > 0) {
-            pendingSwitchTargetClicks--;
-            return true;
+    public static int pollSwitchTargetClicks() {
+        int mapped = 0;
+        while (SWITCH_TARGET_KEY.consumeClick()) {
+            mapped++;
         }
-        return SWITCH_TARGET_KEY.consumeClick();
+        int raw = pendingSwitchTargetClicks;
+        pendingSwitchTargetClicks = 0;
+        return Math.max(mapped, raw);
     }
 
-    public static boolean consumeSwitchTargetPreviousClick() {
-        if (pendingSwitchTargetPreviousClicks > 0) {
-            pendingSwitchTargetPreviousClicks--;
-            return true;
+    public static int pollSwitchTargetPreviousClicks() {
+        int mapped = 0;
+        while (SWITCH_TARGET_PREVIOUS_KEY.consumeClick()) {
+            mapped++;
         }
-        return SWITCH_TARGET_PREVIOUS_KEY.consumeClick();
+        int raw = pendingSwitchTargetPreviousClicks;
+        pendingSwitchTargetPreviousClicks = 0;
+        return Math.max(mapped, raw);
     }
 
     public static void acquireInitialTarget(LocalPlayer player, ClientLevel level) {
@@ -406,7 +410,8 @@ public final class LockOnController {
     }
 
     private static void handleSwitchTargetKey(LocalPlayer player, ClientLevel level) {
-        while (consumeSwitchTargetClick()) {
+        int switchClicks = pollSwitchTargetClicks();
+        for (int i = 0; i < switchClicks; i++) {
             if (!active || lockedTarget == null) {
                 acquireInitialTarget(player, level);
                 continue;
@@ -421,7 +426,8 @@ public final class LockOnController {
             }
         }
 
-        while (consumeSwitchTargetPreviousClick()) {
+        int prevClicks = pollSwitchTargetPreviousClicks();
+        for (int i = 0; i < prevClicks; i++) {
             if (!active || lockedTarget == null) {
                 acquireInitialTarget(player, level);
                 continue;

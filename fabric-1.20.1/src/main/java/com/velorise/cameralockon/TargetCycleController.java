@@ -29,7 +29,8 @@ public final class TargetCycleController {
             return;
         }
 
-        while (LockOnController.consumeSwitchTargetClick()) {
+        int switchClicks = LockOnController.pollSwitchTargetClicks();
+        for (int i = 0; i < switchClicks; i++) {
             LivingEntity current = LockOnController.getLockedTarget();
             if (!LockOnController.isActive() || current == null) {
                 LockOnController.acquireInitialTarget(player, level);
@@ -42,7 +43,8 @@ public final class TargetCycleController {
             }
         }
 
-        while (LockOnController.consumeSwitchTargetPreviousClick()) {
+        int prevClicks = LockOnController.pollSwitchTargetPreviousClicks();
+        for (int i = 0; i < prevClicks; i++) {
             LivingEntity current = LockOnController.getLockedTarget();
             if (!LockOnController.isActive() || current == null) {
                 LockOnController.acquireInitialTarget(player, level);
