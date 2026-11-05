@@ -105,8 +105,17 @@ function Get-LatestReleaseJar(
 
 function Copy-ReleaseJar(
     [System.IO.FileInfo]$Jar,
-    [string]$DisplayName
+    [string]$DisplayName,
+    [string]$CleanPattern
 ) {
+    if (-not [string]::IsNullOrWhiteSpace($CleanPattern)) {
+        Get-ChildItem -Path $OutputDirectory -Filter $CleanPattern -File |
+            Where-Object { $_.Name -ne $Jar.Name } |
+            ForEach-Object {
+                Remove-Item -Path $_.FullName -Force
+                Write-Host "Cleaned up old version: $($_.Name)" -ForegroundColor DarkGray
+            }
+    }
     $destination = Join-Path $OutputDirectory $Jar.Name
     Copy-Item -Path $Jar.FullName -Destination $destination -Force
     Write-Host "Copied $DisplayName -> $destination" -ForegroundColor Green
@@ -146,11 +155,11 @@ try {
         'camera-lock-on-fabric-1.20.1-*.jar' `
         'Fabric 1.20.1'
 
-    Copy-ReleaseJar $neoForge121Jar   'NeoForge 1.21.1'
-    Copy-ReleaseJar $fabric121Jar     'Fabric 1.21.1'
-    Copy-ReleaseJar $fabric12111Jar   'Fabric 1.21.11'
-    Copy-ReleaseJar $forgeJar         'Forge 1.20.1'
-    Copy-ReleaseJar $fabric1201Jar    'Fabric 1.20.1'
+    Copy-ReleaseJar $neoForge121Jar   'NeoForge 1.21.1' 'camera_lockon-1.21.1-neoforge-*.jar'
+    Copy-ReleaseJar $fabric121Jar     'Fabric 1.21.1'   'camera-lock-on-fabric-1.21.1-*.jar'
+    Copy-ReleaseJar $fabric12111Jar   'Fabric 1.21.11'  'camera-lock-on-fabric-1.21.11-*.jar'
+    Copy-ReleaseJar $forgeJar         'Forge 1.20.1'    'camera-lock-on-forge-1.20.1-*.jar'
+    Copy-ReleaseJar $fabric1201Jar    'Fabric 1.20.1'   'camera-lock-on-fabric-1.20.1-*.jar'
 
     Write-Host ""
     Write-Host 'All 5 builds completed successfully.' -ForegroundColor Green
