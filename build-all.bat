@@ -15,8 +15,8 @@ $ErrorActionPreference = 'Stop'
 $WorkspaceParent = Split-Path -Parent $Root.TrimEnd('\', '/')
 
 # Final release destination:
-# C:\Users\hunga\Documents\Coder\Minecraft\myMod\mods
-$OutputDirectory = Join-Path $WorkspaceParent 'mods'
+# C:\Documents\Coder\Minecraft\myMod\mods\camera_lockon
+$OutputDirectory = Join-Path (Join-Path $WorkspaceParent 'mods') 'camera_lockon'
 
 # NeoForge writes its release JAR into build/libs, same as Fabric and Forge.
 

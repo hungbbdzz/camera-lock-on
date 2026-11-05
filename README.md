@@ -81,7 +81,7 @@ Run the master automation script from the repository root:
 ```cmd
 build-all.bat
 ```
-* Built `.jar` files are automatically assembled and copied into `mods/`.
+* Built `.jar` files are automatically assembled and copied into `mods/camera_lockon/`.
 * Requires JDK 21 (`JAVA21_HOME`) and JDK 17 (`JAVA17_HOME`).
 
 ### 2. Run Development Clients
