@@ -8,6 +8,8 @@ All notable changes to **Camera Lock-On** are documented in this file.
 
 - Added client-side Target Outline via `EntityOutlineMixin` for glowing silhouettes matching the configured Reticle Color without network desync or damage-flicker.
 - Added Ender Dragon multipart entity support for Target Outline.
+- Added port for **Fabric 1.20.1** (Java 17).
+- Dropped inactive **NeoForge 1.21.11** port to focus on the 5 core community editions (Forge 1.20.1, Fabric 1.20.1, NeoForge 1.21.1, Fabric 1.21.1, Fabric 1.21.11).
 - Fixed target loss while `Occluded Steering` is active, maintaining lock and tracking continuously behind solid blocks and walls.
 - Expanded First-Person Aim Strength slider and configuration limit up to 4.0x (400%).
 - Added interactive Safe Server confirmation dialog (`SafeServerConfirmScreen`) displaying a scrollable list of proposed setting changes (`Setting: Old -> New`) with Apply and Cancel buttons.

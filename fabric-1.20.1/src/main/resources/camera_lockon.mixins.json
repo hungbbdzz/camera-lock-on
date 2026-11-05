@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "com.velorise.cameralockon.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "GameRendererMixin",
+    "MouseHandlerMixin",
+    "CameraPositionMixin",
+    "EntityOutlineMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+

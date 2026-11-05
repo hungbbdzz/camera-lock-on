@@ -14,20 +14,15 @@ echo ====================================================
 echo       Camera Lock-On - NeoForge Dev Client
 echo ====================================================
 echo   1) NeoForge 1.21.1
-echo   2) NeoForge 1.21.11
 echo   0) Exit
 echo ----------------------------------------------------
-set /p "CHOICE=Select version to run [1-2, default=1]: "
+set /p "CHOICE=Select version to run [1, default=1]: "
 if "%CHOICE%"=="" set "CHOICE=1"
 
 :HANDLE_CHOICE
 if "%CHOICE%"=="1" goto :RUN_1211
 if "%CHOICE%"=="1.21.1" goto :RUN_1211
 if "%CHOICE%"=="1211" goto :RUN_1211
-
-if "%CHOICE%"=="2" goto :RUN_12111
-if "%CHOICE%"=="1.21.11" goto :RUN_12111
-if "%CHOICE%"=="12111" goto :RUN_12111
 
 if "%CHOICE%"=="0" exit /b 0
 
@@ -39,20 +34,10 @@ goto :MENU
 set "TARGET_DIR=neoforge-1.21.1"
 goto :START_CLIENT
 
-:RUN_12111
-set "TARGET_DIR=neoforge-1.21.11"
-goto :START_CLIENT
-
 :START_CLIENT
 echo [Camera Lock-On] Running %TARGET_DIR% client...
 cd /d "%REPO_ROOT%\%TARGET_DIR%"
 call gradlew.bat runClient
 set "EXITCODE=%ERRORLEVEL%"
 cd /d "%REPO_ROOT%"
-if not "%EXITCODE%"=="0" (
-    echo.
-    echo [Camera Lock-On] Client exited with error code %EXITCODE%.
-    pause
-)
 exit /b %EXITCODE%
-

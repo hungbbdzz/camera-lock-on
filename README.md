@@ -26,9 +26,9 @@ This repository contains all official editions of Camera Lock-On:
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | [`neoforge-1.21.1/`](neoforge-1.21.1/) | **1.21.1** | NeoForge 21.1.65+ | Java 21 | Stable Release | `camera_lockon-1.21.1-neoforge-2.0.3.jar` |
 | [`fabric-1.21.1/`](fabric-1.21.1/) | **1.21.1** | Fabric Loader 0.16.14+ | Java 21 | Stable Release | `camera_lockon-1.21.1-fabric-2.0.3.jar` |
-| [`neoforge-1.21.11/`](neoforge-1.21.11/) | **1.21.11** | NeoForge 21.11.45+ | Java 21 | Stable Release | `camera_lockon-1.21.11-neoforge-2.0.3.jar` |
 | [`fabric-1.21.11/`](fabric-1.21.11/) | **1.21.11** | Fabric Loader 0.17.3+ | Java 21 | Stable Release | `camera_lockon-1.21.11-fabric-2.0.3.jar` |
 | [`forge-1.20.1/`](forge-1.20.1/) | **1.20.1** | Forge 47.4.10+ | Java 17 | Stable Release | `camera_lockon-1.20.1-forge-2.0.3.jar` |
+| [`fabric-1.20.1/`](fabric-1.20.1/) | **1.20.1** | Fabric Loader 0.16.14+ | Java 17 | Stable Release | `camera_lockon-1.20.1-fabric-2.0.3.jar` |
 
 ---
 
