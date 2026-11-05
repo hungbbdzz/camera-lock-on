@@ -93,12 +93,12 @@ public final class CameraLockOnConfig {
     public static final double DEFAULT_PROJECTILE_MAX_FLIGHT_TIME = 4.0D;
     public static final boolean DEFAULT_PROJECTILE_COMPENSATE_DROP = true;
     public static final boolean DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT = true;
-    public static final boolean DEFAULT_AUTO_RELEASE_BOW = true;
+    public static final boolean DEFAULT_AUTO_RELEASE_BOW = false;
     public static final AimRayMode DEFAULT_AIM_RAY_MODE = AimRayMode.PROJECTILE_ONLY;
-    public static final boolean DEFAULT_AUTO_RECHARGE_BOW = true;
+    public static final boolean DEFAULT_AUTO_RECHARGE_BOW = false;
     public static final boolean DEFAULT_AUTO_CYCLE_CROSSBOW = false;
-    public static final boolean DEFAULT_SMART_PROJECTILE_HITBOX = true;
-    public static final boolean DEFAULT_ADAPTIVE_AIM_CALIBRATION = true;
+    public static final boolean DEFAULT_SMART_PROJECTILE_HITBOX = false;
+    public static final boolean DEFAULT_ADAPTIVE_AIM_CALIBRATION = false;
     public static final boolean DEFAULT_TRAJECTORY_PREVIEW = false;
     public static final boolean DEFAULT_TRAJECTORY_FULL_CHARGE = true;
     public static final boolean DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK = true;
@@ -220,7 +220,7 @@ public final class CameraLockOnConfig {
         LOCK_ON_RANGE = builder.comment("Maximum lock-on range in blocks.")
                 .defineInRange("lockOnRange", DEFAULT_LOCK_ON_RANGE, 5.0D, 128.0D);
         FIRST_PERSON_AIM_STRENGTH = builder.comment("First-person lock-on pull strength. Values above 1.25 may feel less smooth near close targets.")
-                .defineInRange("firstPersonAimStrength", DEFAULT_FIRST_PERSON_AIM_STRENGTH, 0.25D, 2.0D);
+                .defineInRange("firstPersonAimStrength", DEFAULT_FIRST_PERSON_AIM_STRENGTH, 0.25D, 4.0D);
         SMART_LOCK = builder.comment("Allows temporary free look before the camera returns to the target.")
                 .define("smartLock", DEFAULT_SMART_LOCK);
         SHOW_RETICLE = builder.comment("Render the 3D lock-on reticle on the current target.")

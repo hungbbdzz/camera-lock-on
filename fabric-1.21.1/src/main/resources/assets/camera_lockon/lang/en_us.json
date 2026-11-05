@@ -357,5 +357,10 @@
   "gui.camera_lockon.camera.custom_drag.tooltip": "Drag inside the preview area to move the player framing horizontally and vertically.",
   "key.category.camera_lockon.general": "Camera Lock-On",
   "gui.camera_lockon.projectile_settings.projectile_weapons": "Manage Projectile Weapons",
-  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Register or remove vanilla and modded ranged weapons for projectile prediction and assistance."
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Register or remove vanilla and modded ranged weapons for projectile prediction and assistance.",
+  "gui.camera_lockon.safe_server.title": "Safe Server Preset",
+  "gui.camera_lockon.safe_server.description": "The following settings will be adjusted:",
+  "gui.camera_lockon.safe_server.no_changes": "All settings already match Safe Server preset.",
+  "gui.camera_lockon.safe_server.apply": "Apply",
+  "gui.camera_lockon.safe_server.cancel": "Cancel"
 }

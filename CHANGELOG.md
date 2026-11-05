@@ -4,6 +4,19 @@ All notable changes to **Camera Lock-On** are documented in this file.
 
 ---
 
+## [2.0.3] — Target Outline, Occluded Steering & Safe Server Dialog
+
+- Added client-side Target Outline via `EntityOutlineMixin` for glowing silhouettes matching the configured Reticle Color without network desync or damage-flicker.
+- Added Ender Dragon multipart entity support for Target Outline.
+- Fixed target loss while `Occluded Steering` is active, maintaining lock and tracking continuously behind solid blocks and walls.
+- Expanded First-Person Aim Strength slider and configuration limit up to 4.0x (400%).
+- Added interactive Safe Server confirmation dialog (`SafeServerConfirmScreen`) displaying a scrollable list of proposed setting changes (`Setting: Old -> New`) with Apply and Cancel buttons.
+- Changed default values for `autoReleaseBow` and `autoRechargeBow` to `false` (off by default).
+- Set `multipartAimMode` (OFF), `smartProjectileHitbox` (false), and `adaptiveAimCalibration` (false) to off by default.
+- Added translations for Safe Server dialog in all 6 supported languages (English, German, Spanish, Japanese, Russian, Chinese).
+
+---
+
 ## [2.0.2] — Bug Fixes & Refinements
 
 - Fixed `MultipartDamageBoxResolver` reflection recursion and vehicle/player hitbox misidentification.

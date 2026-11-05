@@ -85,7 +85,7 @@ public final class AutoBowReleaseController {
 
         LivingEntity target = getAssistedTarget(player);
         if (target != null) {
-            Vec3 baseAim = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
+            Vec3 baseAim = TargetingRules.toWorldAimPoint(target, player.getEyePosition(), target.getX(), target.getY(), target.getZ());
             Vec3 aimPoint = ProjectileAimCalculator.resolveForCamera(player, target, baseAim);
             if (!ProjectileAimCalculator.hasClearProjectilePath(player, target, aimPoint)) return;
             if (!isAligned(player, aimPoint)) return;

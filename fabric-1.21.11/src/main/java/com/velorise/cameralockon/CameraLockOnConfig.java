@@ -116,12 +116,12 @@ public final class CameraLockOnConfig {
     public static final double DEFAULT_PROJECTILE_MAX_FLIGHT_TIME = 4.0D;
     public static final boolean DEFAULT_PROJECTILE_COMPENSATE_DROP = true;
     public static final boolean DEFAULT_PROJECTILE_COMPENSATE_PLAYER_MOVEMENT = true;
-    public static final boolean DEFAULT_AUTO_RELEASE_BOW = true;
+    public static final boolean DEFAULT_AUTO_RELEASE_BOW = false;
     public static final AimRayMode DEFAULT_AIM_RAY_MODE = AimRayMode.PROJECTILE_ONLY;
-    public static final boolean DEFAULT_AUTO_RECHARGE_BOW = true;
+    public static final boolean DEFAULT_AUTO_RECHARGE_BOW = false;
     public static final boolean DEFAULT_AUTO_CYCLE_CROSSBOW = false;
-    public static final boolean DEFAULT_SMART_PROJECTILE_HITBOX = true;
-    public static final boolean DEFAULT_ADAPTIVE_AIM_CALIBRATION = true;
+    public static final boolean DEFAULT_SMART_PROJECTILE_HITBOX = false;
+    public static final boolean DEFAULT_ADAPTIVE_AIM_CALIBRATION = false;
     public static final boolean DEFAULT_TRAJECTORY_PREVIEW = false;
     public static final boolean DEFAULT_TRAJECTORY_FULL_CHARGE = true;
     public static final boolean DEFAULT_TRAJECTORY_SHOW_WITHOUT_LOCK = true;
@@ -137,7 +137,7 @@ public final class CameraLockOnConfig {
     public static final ClientSpec CLIENT_SPEC = new ClientSpec();
 
     public static final DoubleValue LOCK_ON_RANGE = doubleValue("general.lockOnRange", DEFAULT_LOCK_ON_RANGE, 5.0D, 128.0D);
-    public static final DoubleValue FIRST_PERSON_AIM_STRENGTH = doubleValue("general.firstPersonAimStrength", DEFAULT_FIRST_PERSON_AIM_STRENGTH, 0.25D, 2.0D);
+    public static final DoubleValue FIRST_PERSON_AIM_STRENGTH = doubleValue("general.firstPersonAimStrength", DEFAULT_FIRST_PERSON_AIM_STRENGTH, 0.25D, 4.0D);
     public static final BooleanValue SMART_LOCK = booleanValue("general.smartLock", DEFAULT_SMART_LOCK);
     public static final BooleanValue SHOW_RETICLE = booleanValue("general.showReticle", DEFAULT_SHOW_RETICLE);
     public static final ConfigValue<String> RETICLE_COLOR = stringValue("general.reticleColor", DEFAULT_RETICLE_COLOR, CameraLockOnConfig::isValidReticleColor);

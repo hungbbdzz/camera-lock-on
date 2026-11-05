@@ -4,7 +4,8 @@
   "package": "com.velorise.cameralockon.mixin",
   "compatibilityLevel": "JAVA_17",
   "client": [
-    "CameraPositionMixin"
+    "CameraPositionMixin",
+    "EntityOutlineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

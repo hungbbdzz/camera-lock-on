@@ -5,7 +5,8 @@
   "client": [
     "GameRendererMixin",
     "MouseHandlerMixin",
-    "CameraPositionMixin"
+    "CameraPositionMixin",
+    "EntityOutlineMixin"
   ],
   "injectors": {
     "defaultRequire": 1

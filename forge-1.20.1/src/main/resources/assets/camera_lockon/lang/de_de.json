@@ -357,5 +357,10 @@
   "gui.camera_lockon.camera.custom_drag.tooltip": "Ziehe im Vorschaubereich, um den Spieler horizontal und vertikal zu verschieben.",
   "key.category.camera_lockon.general": "Kamera-Zielerfassung",
   "gui.camera_lockon.projectile_settings.projectile_weapons": "Fernkampfwaffen verwalten",
-  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Vanilla- und Mod-Fernkampfwaffen für Projektilvorhersage und Zielhilfe hinzufügen oder entfernen."
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Vanilla- und Mod-Fernkampfwaffen für Projektilvorhersage und Zielhilfe hinzufügen oder entfernen.",
+  "gui.camera_lockon.safe_server.title": "Sichere Server-Voreinstellung",
+  "gui.camera_lockon.safe_server.description": "Folgende Einstellungen werden angepasst:",
+  "gui.camera_lockon.safe_server.no_changes": "Alle Einstellungen entsprechen bereits der Voreinstellung.",
+  "gui.camera_lockon.safe_server.apply": "Anwenden",
+  "gui.camera_lockon.safe_server.cancel": "Abbrechen"
 }

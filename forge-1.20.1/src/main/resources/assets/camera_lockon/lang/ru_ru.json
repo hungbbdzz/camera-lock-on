@@ -357,5 +357,10 @@
   "gui.camera_lockon.camera.custom_drag.tooltip": "Перетаскивайте внутри области предпросмотра, чтобы сдвигать кадр игрока по горизонтали и вертикали.",
   "key.category.camera_lockon.general": "Camera Lock-On Auto-Aim",
   "gui.camera_lockon.projectile_settings.projectile_weapons": "Управление стрелковым оружием",
-  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Добавление или удаление стрелкового оружия из модов для упреждения и помощи при стрельбе."
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Добавление или удаление стрелкового оружия из модов для упреждения и помощи при стрельбе.",
+  "gui.camera_lockon.safe_server.title": "Безопасный пресет для серверов",
+  "gui.camera_lockon.safe_server.description": "Следующие настройки будут изменены:",
+  "gui.camera_lockon.safe_server.no_changes": "Все настройки уже соответствуют безопасному пресету.",
+  "gui.camera_lockon.safe_server.apply": "Применить",
+  "gui.camera_lockon.safe_server.cancel": "Отмена"
 }

@@ -357,5 +357,10 @@
   "gui.camera_lockon.camera.custom_drag.tooltip": "在预览区域内拖动，以水平和垂直调整玩家构图。",
   "key.category.camera_lockon.general": "Camera Lock-On 视角锁定",
   "gui.camera_lockon.projectile_settings.projectile_weapons": "管理远程弹道武器",
-  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "添加或移除用于弹道预判与辅助瞄准的原版或模组远程武器。"
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "添加或移除用于弹道预判与辅助瞄准的原版或模组远程武器。",
+  "gui.camera_lockon.safe_server.title": "安全服务器预设",
+  "gui.camera_lockon.safe_server.description": "将修改以下配置项:",
+  "gui.camera_lockon.safe_server.no_changes": "所有设置已符合安全服务器预设。",
+  "gui.camera_lockon.safe_server.apply": "应用",
+  "gui.camera_lockon.safe_server.cancel": "取消"
 }

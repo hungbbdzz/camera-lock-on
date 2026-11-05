@@ -126,7 +126,7 @@ public final class PresetStore {
                 CameraLockOnConfig.AUTO_RETARGET.set(bool(s, "autoRetarget", CameraLockOnConfig.AUTO_RETARGET.get()));
                 CameraLockOnConfig.HOSTILE_ONLY.set(bool(s, "hostileOnly", CameraLockOnConfig.HOSTILE_ONLY.get()));
                 CameraLockOnConfig.LOCK_ON_RANGE.set(clamp(number(s, "lockOnRange", CameraLockOnConfig.LOCK_ON_RANGE.get()), 5, 128));
-                CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.set(clamp(number(s, "firstPersonAimStrength", CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.get()), 0.25, 2.0));
+                CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.set(clamp(number(s, "firstPersonAimStrength", CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.get()), 0.25, 4.0));
                 CameraLockOnConfig.AIM_PRESET.set(CameraLockOnConfig.AimPreset.fromConfig(text(s, "aimPreset", CameraLockOnConfig.AIM_PRESET.get())).name());
                 CameraLockOnConfig.AIM_POINT_X.set(clamp(number(s, "aimPointX", CameraLockOnConfig.AIM_POINT_X.get()), -1, 1));
                 CameraLockOnConfig.AIM_POINT_Y.set(clamp(number(s, "aimPointY", CameraLockOnConfig.AIM_POINT_Y.get()), 0, 1));

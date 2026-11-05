@@ -125,7 +125,7 @@ public final class LockOnConfigScreen extends Screen {
         addHeader(x, y, "gui.camera_lockon.header.core_targeting"); y += 14;
         addToggle(x, y, "gui.camera_lockon.main.smart_lock", CameraLockOnConfig.SMART_LOCK);
         addToggle(secondColumnX(x), y, "gui.camera_lockon.main.hostile_only", CameraLockOnConfig.HOSTILE_ONLY); y += ROW_STEP;
-        addSlider(x, y, columnWidth(), "gui.camera_lockon.main.first_person_aim_strength", "gui.camera_lockon.unit.times", 0.25, 2.0,
+        addSlider(x, y, columnWidth(), "gui.camera_lockon.main.first_person_aim_strength", "gui.camera_lockon.unit.times", 0.25, 4.0,
                 CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH::get,
                 value -> CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.set(value), 2);
         addSlider(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.range", "gui.camera_lockon.unit.blocks", 5, 128,
@@ -163,7 +163,7 @@ public final class LockOnConfigScreen extends Screen {
         addAction(secondColumnX(x), y, columnWidth(), "gui.camera_lockon.main.projectile_settings",
                 () -> setScreen(new ProjectileSettingsScreen(this)));
         y += ROW_STEP;
-        addAction(x, y, innerWidth(), "gui.camera_lockon.button.safe_server", this::applySafeServerPreset);
+        addAction(x, y, innerWidth(), "gui.camera_lockon.button.safe_server", this::openSafeServerConfirmation);
     }
 
     private void buildCamera(int x, int y) {
@@ -375,11 +375,18 @@ public final class LockOnConfigScreen extends Screen {
                 : null;
     }
 
+    private void openSafeServerConfirmation() {
+        if (this.minecraft == null) return;
+        this.minecraft.setScreen(new SafeServerConfirmScreen(this, this::applySafeServerPreset));
+    }
+
     private void applySafeServerPreset() {
         CameraLockOnConfig.AUTO_LOCK.set(false);
         CameraLockOnConfig.AUTO_RETARGET.set(false);
         CameraLockOnConfig.AUTO_LOCK_INDICATOR.set(false);
         CameraLockOnConfig.PROJECTILE_ASSIST_MODE.set(CameraLockOnConfig.ProjectileAssistMode.OFF.name());
+        CameraLockOnConfig.MULTIPART_AIM_MODE.set(CameraLockOnConfig.MultipartAimMode.OFF.name());
+        CameraLockOnConfig.SMART_PROJECTILE_HITBOX.set(false);
         CameraLockOnConfig.AUTO_RELEASE_BOW.set(false);
         CameraLockOnConfig.AUTO_RECHARGE_BOW.set(false);
         CameraLockOnConfig.TRAJECTORY_PREVIEW.set(false);

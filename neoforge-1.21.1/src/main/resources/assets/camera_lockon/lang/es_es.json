@@ -357,5 +357,10 @@
   "gui.camera_lockon.camera.custom_drag.tooltip": "Arrastra dentro de la vista previa para mover el encuadre del jugador horizontal y verticalmente.",
   "key.category.camera_lockon.general": "Camera Lock-On",
   "gui.camera_lockon.projectile_settings.projectile_weapons": "Gestionar armas de proyectiles",
-  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Añade o elimina armas a distancia vanilla o de mods para la predicción y asistencia de proyectiles."
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "Añade o elimina armas a distancia vanilla o de mods para la predicción y asistencia de proyectiles.",
+  "gui.camera_lockon.safe_server.title": "Ajuste de Servidor Seguro",
+  "gui.camera_lockon.safe_server.description": "Se modificaran los siguientes ajustes:",
+  "gui.camera_lockon.safe_server.no_changes": "Todos los ajustes ya coinciden con el perfil seguro.",
+  "gui.camera_lockon.safe_server.apply": "Aplicar",
+  "gui.camera_lockon.safe_server.cancel": "Cancelar"
 }

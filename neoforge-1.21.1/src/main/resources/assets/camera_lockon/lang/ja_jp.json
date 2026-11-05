@@ -357,5 +357,10 @@
   "gui.camera_lockon.camera.custom_drag.tooltip": "プレビュー内をドラッグして、プレイヤーの構図を水平・垂直に移動します。",
   "key.category.camera_lockon.general": "Camera Lock-On ターゲット固定",
   "gui.camera_lockon.projectile_settings.projectile_weapons": "遠거리・投射武器の管理",
-  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "弾道予測と照準アシストの対象にするバニラ・Modの遠距離武器を追加または削除します。"
+  "gui.camera_lockon.projectile_settings.projectile_weapons.tooltip": "弾道予測と照準アシストの対象にするバニラ・Modの遠距離武器を追加または削除します。",
+  "gui.camera_lockon.safe_server.title": "安全サーバープリセット",
+  "gui.camera_lockon.safe_server.description": "以下の設定が変更されます:",
+  "gui.camera_lockon.safe_server.no_changes": "すべての設定が安全プリセットに適合しています。",
+  "gui.camera_lockon.safe_server.apply": "適用",
+  "gui.camera_lockon.safe_server.cancel": "キャンセル"
 }

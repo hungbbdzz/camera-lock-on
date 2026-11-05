@@ -37,6 +37,8 @@ public final class ProjectileAimCalculator {
     private static int cachedSmartTargetId = Integer.MIN_VALUE;
     private static long cachedSmartGameTime = Long.MIN_VALUE;
     private static boolean cachedSmartMultipart;
+    private static boolean cachedSmartHitboxSetting;
+    private static CameraLockOnConfig.MultipartAimMode cachedMultipartAimMode = CameraLockOnConfig.MultipartAimMode.OFF;
 
     private ProjectileAimCalculator() {}
 
@@ -73,28 +75,39 @@ public final class ProjectileAimCalculator {
 
     public static Vec3 resolveForCamera(LocalPlayer player, LivingEntity target, Vec3 baseAimPoint) {
         if (CameraLockOnConfig.ProjectileAssistMode.fromConfig(CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get())
-                != CameraLockOnConfig.ProjectileAssistMode.CAMERA) {
+                != CameraLockOnConfig.ProjectileAssistMode.CAMERA
+                || !isPredictionActive(player)) {
+            resetIfTargetChanged(target);
             return baseAimPoint;
         }
         return resolve(player, target, baseAimPoint);
     }
 
     public static Vec3 resolveForReticle(LocalPlayer player, LivingEntity target, Vec3 baseAimPoint) {
-        return resolve(player, target, baseAimPoint);
-    }
-
-    private static Vec3 resolve(LocalPlayer player, LivingEntity target, Vec3 baseAimPoint) {
-        baseAimPoint = selectBestAimPoint(player, target, baseAimPoint);
-        baseAimPoint = AdaptiveAimCalibration.apply(baseAimPoint, player.getEyePosition());
-        lastResolvedAimPoint = baseAimPoint;
-        lastResolvedTargetId = target.getId();
         CameraLockOnConfig.ProjectileAssistMode mode = CameraLockOnConfig.ProjectileAssistMode
                 .fromConfig(CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get());
         if (mode == CameraLockOnConfig.ProjectileAssistMode.OFF || !isPredictionActive(player)) {
             resetIfTargetChanged(target);
+            return baseAimPoint;
+        }
+        return resolve(player, target, baseAimPoint);
+    }
+
+    private static Vec3 resolve(LocalPlayer player, LivingEntity target, Vec3 baseAimPoint) {
+        CameraLockOnConfig.ProjectileAssistMode mode = CameraLockOnConfig.ProjectileAssistMode
+                .fromConfig(CameraLockOnConfig.PROJECTILE_ASSIST_MODE.get());
+        if (mode == CameraLockOnConfig.ProjectileAssistMode.OFF || !isPredictionActive(player)) {
+            resetIfTargetChanged(target);
+            lastResolvedAimPoint = baseAimPoint;
+            lastResolvedTargetId = target.getId();
             smoothedAimPoint = baseAimPoint;
             return baseAimPoint;
         }
+
+        baseAimPoint = selectBestAimPoint(player, target, baseAimPoint);
+        baseAimPoint = AdaptiveAimCalibration.apply(baseAimPoint, player.getEyePosition());
+        lastResolvedAimPoint = baseAimPoint;
+        lastResolvedTargetId = target.getId();
 
         resetIfTargetChanged(target);
         Vec3 measuredVelocity = new Vec3(target.getX() - target.xo, target.getY() - target.yo, target.getZ() - target.zo);
@@ -195,41 +208,76 @@ public final class ProjectileAimCalculator {
      * back to the large parent bounding box, which may contain empty non-damageable space.
      */
     public static Vec3 selectBestAimPoint(LocalPlayer player, LivingEntity target, Vec3 preferred) {
-        if (!CameraLockOnConfig.SMART_PROJECTILE_HITBOX.get() || target == null) return preferred;
+        if (target == null) return preferred;
+
+        boolean smartHitbox = CameraLockOnConfig.SMART_PROJECTILE_HITBOX.get();
+        CameraLockOnConfig.MultipartAimMode multipartAimMode = CameraLockOnConfig.MultipartAimMode
+                .fromConfig(CameraLockOnConfig.MULTIPART_AIM_MODE.get());
+        if (!smartHitbox && multipartAimMode == CameraLockOnConfig.MultipartAimMode.OFF) {
+            clearSmartAimCache();
+            return preferred;
+        }
 
         long gameTime = player.level().getGameTime();
         Vec3 targetPosition = target.position();
-        if (cachedSmartTargetId == target.getId() && cachedSmartAimPoint != null) {
+        if (cachedSmartTargetId == target.getId()
+                && cachedSmartAimPoint != null
+                && cachedSmartHitboxSetting == smartHitbox
+                && cachedMultipartAimMode == multipartAimMode) {
             long age = gameTime - cachedSmartGameTime;
             long maximumAge = cachedSmartMultipart ? 1L : 2L;
             if (age >= 0L && age <= maximumAge) {
-                Vec3 translated = cachedSmartAimPoint.add(targetPosition.subtract(cachedSmartTargetPosition));
-                return translated;
+                return cachedSmartAimPoint.add(targetPosition.subtract(cachedSmartTargetPosition));
             }
         }
 
-        List<MultipartDamageBoxResolver.DamageBox> damageBoxes = MultipartDamageBoxResolver.resolve(target);
-        if (damageBoxes.isEmpty()) return preferred;
-        boolean multipart = damageBoxes.stream().anyMatch(MultipartDamageBoxResolver.DamageBox::multipart);
-        CameraLockOnConfig.MultipartAimMode multipartAimMode = CameraLockOnConfig.MultipartAimMode
-                .fromConfig(CameraLockOnConfig.MULTIPART_AIM_MODE.get());
-        if (multipart && multipartAimMode == CameraLockOnConfig.MultipartAimMode.OFF) {
-            rememberSmartAim(target, preferred, gameTime, false);
+        List<MultipartDamageBoxResolver.DamageBox> damageBoxes;
+        boolean multipart;
+        if (multipartAimMode == CameraLockOnConfig.MultipartAimMode.OFF) {
+            damageBoxes = MultipartDamageBoxResolver.singleEntityBox(target);
+            multipart = false;
+        } else {
+            damageBoxes = MultipartDamageBoxResolver.resolve(target);
+            multipart = damageBoxes.stream().anyMatch(MultipartDamageBoxResolver.DamageBox::multipart);
+        }
+        if (damageBoxes.isEmpty()) {
+            clearSmartAimCache();
+            return preferred;
+        }
+
+        // If the target is not a multipart entity, only proceed when Smart Hitbox Aim is explicitly enabled.
+        if (!multipart && !smartHitbox) {
+            clearSmartAimCache();
             return preferred;
         }
 
         Vec3 eye = player.getEyePosition();
+        double speed = selectionSpeed(player);
+        Vec3 relativeVelocity = measuredRelativeVelocity(player, target);
+
+        // Respect the user's configured Aim Preset / Custom Aim Point / Per-Entity Override / Group Aim
+        // whenever that preferred point is already unobstructed and reachable.
+        if (!multipart || TargetingRules.hasPerEntityAimPoint(target)) {
+            if ((!multipart || isInsideAnyDamageBox(preferred, damageBoxes))
+                    && isPointReachableAndClear(player, eye, preferred, relativeVelocity, speed)) {
+                rememberSmartAim(target, preferred, gameTime, false, smartHitbox, multipartAimMode);
+                return preferred;
+            }
+        }
+
         Vec3 stablePrevious = null;
-        if (lastSmartTargetId == target.getId() && lastSmartAimPoint != null && lastSmartTargetPosition != null) {
+        if (lastSmartTargetId == target.getId()
+                && lastSmartAimPoint != null
+                && lastSmartTargetPosition != null
+                && cachedSmartHitboxSetting == smartHitbox
+                && cachedMultipartAimMode == multipartAimMode) {
             stablePrevious = lastSmartAimPoint.add(targetPosition.subtract(lastSmartTargetPosition));
         }
 
-        double speed = selectionSpeed(player);
-        Vec3 relativeVelocity = measuredRelativeVelocity(player, target);
         if (multipart && multipartAimMode == CameraLockOnConfig.MultipartAimMode.STABLE_BODY) {
             Vec3 stableBody = selectStableMultipartBodyAim(player, target, preferred, eye, stablePrevious,
                     relativeVelocity, speed, damageBoxes, gameTime);
-            rememberSmartAim(target, stableBody, gameTime, true);
+            rememberSmartAim(target, stableBody, gameTime, true, smartHitbox, multipartAimMode);
             return stableBody;
         }
         List<HitboxCandidate> candidates = new ArrayList<>();
@@ -276,13 +324,19 @@ public final class ProjectileAimCalculator {
             double stabilityPenalty = stablePrevious == null ? 0.0D
                     : candidate.point.distanceTo(stablePrevious) / boxDiagonal;
 
-            double score = candidate.damageBox.priority() * 1.35D
-                    + exposure * 2.65D
-                    + verticalCenter * 0.70D
-                    + lateralCenter * 0.40D
-                    + (candidate.directClear ? 0.35D : 0.0D)
-                    - preferredPenalty * 0.30D
-                    - stabilityPenalty * 0.85D;
+            double score = multipart
+                    ? (candidate.damageBox.priority() * 1.35D
+                            + exposure * 2.65D
+                            + verticalCenter * 0.70D
+                            + lateralCenter * 0.40D
+                            + (candidate.directClear ? 0.35D : 0.0D)
+                            - preferredPenalty * 0.45D
+                            - stabilityPenalty * 0.85D)
+                    : (exposure * 2.20D
+                            + (candidate.directClear ? 0.50D : 0.0D)
+                            + lateralCenter * 0.25D
+                            - preferredPenalty * 1.85D
+                            - stabilityPenalty * 0.75D);
             candidate.score = score;
 
             if (score > bestScore) {
@@ -304,9 +358,36 @@ public final class ProjectileAimCalculator {
             best = previousCandidate;
         }
 
-        Vec3 selected = best != null ? best.point : fallbackDamagePoint(damageBoxes, preferred, eye);
-        rememberSmartAim(target, selected, gameTime, multipart);
+        Vec3 selected = best != null ? best.point : (multipart ? fallbackDamagePoint(damageBoxes, preferred, eye) : preferred);
+        rememberSmartAim(target, selected, gameTime, multipart, smartHitbox, multipartAimMode);
         return selected;
+    }
+
+    private static boolean isPointReachableAndClear(LocalPlayer player, Vec3 eye, Vec3 point,
+                                                    Vec3 relativeVelocity, double speed) {
+        boolean directClear = isBlockRayClear(player, point);
+        if (speed < MIN_SOLVER_SPEED) {
+            return directClear;
+        }
+        ReachableSolution solution = solveReachableIntercept(eye, point, relativeVelocity, speed);
+        return solution != null && isTrajectoryBlockClear(player, solution, speed);
+    }
+
+    private static boolean isInsideAnyDamageBox(Vec3 point, List<MultipartDamageBoxResolver.DamageBox> damageBoxes) {
+        for (MultipartDamageBoxResolver.DamageBox damageBox : damageBoxes) {
+            if (damageBox.box().inflate(0.15D).contains(point)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void clearSmartAimCache() {
+        cachedSmartTargetId = Integer.MIN_VALUE;
+        cachedSmartAimPoint = null;
+        cachedSmartTargetPosition = null;
+        cachedSmartGameTime = Long.MIN_VALUE;
+        cachedSmartMultipart = false;
     }
 
 
@@ -513,7 +594,8 @@ public final class ProjectileAimCalculator {
         return Math.sqrt(x * x + y * y + z * z);
     }
 
-    private static void rememberSmartAim(LivingEntity target, Vec3 selected, long gameTime, boolean multipart) {
+    private static void rememberSmartAim(LivingEntity target, Vec3 selected, long gameTime, boolean multipart,
+                                         boolean smartHitbox, CameraLockOnConfig.MultipartAimMode multipartAimMode) {
         lastSmartTargetId = target.getId();
         lastSmartAimPoint = selected;
         lastSmartTargetPosition = target.position();
@@ -522,6 +604,8 @@ public final class ProjectileAimCalculator {
         cachedSmartTargetPosition = target.position();
         cachedSmartGameTime = gameTime;
         cachedSmartMultipart = multipart;
+        cachedSmartHitboxSetting = smartHitbox;
+        cachedMultipartAimMode = multipartAimMode;
     }
 
     private static boolean isBlockRayClear(LocalPlayer player, Vec3 point) {

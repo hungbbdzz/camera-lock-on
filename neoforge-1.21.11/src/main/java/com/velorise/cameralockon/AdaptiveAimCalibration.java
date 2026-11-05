@@ -47,7 +47,7 @@ public final class AdaptiveAimCalibration {
                                 && a.getDeltaMovement().lengthSqr() > 0.04D
                                 && !FLIGHTS.containsKey(a.getId()))) {
                     Vec3 aim = ProjectileAimCalculator.getLastResolvedAimPoint(target);
-                    if (aim == null) aim = target.position().add(0, target.getBbHeight() * 0.55D, 0);
+                    if (aim == null) aim = TargetingRules.toWorldAimPoint(target, player.getEyePosition(), target.getX(), target.getY(), target.getZ());
                     Vec3 eye = player.getEyePosition();
                     double distance = Math.hypot(aim.x - eye.x, aim.z - eye.z);
                     double height = aim.y - eye.y;

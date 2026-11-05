@@ -580,13 +580,17 @@ public final class LockOnController {
         }
 
         if (!player.hasLineOfSight(lockedTarget)) {
-            lostLineOfSightTicks++;
-            int graceTicks = Math.max(
-                    0,
-                    (int) Math.round(CameraLockOnConfig.LOST_TARGET_GRACE.get() * 20.0D)
-            );
-            if (lostLineOfSightTicks > graceTicks) {
-                retargetOrUnlock(player, level, lockedTarget, TargetLossReason.LOST_LINE_OF_SIGHT);
+            if (allowsOccludedSteering()) {
+                lostLineOfSightTicks = 0;
+            } else {
+                lostLineOfSightTicks++;
+                int graceTicks = Math.max(
+                        0,
+                        (int) Math.round(CameraLockOnConfig.LOST_TARGET_GRACE.get() * 20.0D)
+                );
+                if (lostLineOfSightTicks > graceTicks) {
+                    retargetOrUnlock(player, level, lockedTarget, TargetLossReason.LOST_LINE_OF_SIGHT);
+                }
             }
         } else {
             lostLineOfSightTicks = 0;
@@ -777,7 +781,7 @@ public final class LockOnController {
                 thirdPersonView
                         ? CameraLockOnConfig.THIRD_PERSON_AIM_STRENGTH.get()
                         : CameraLockOnConfig.FIRST_PERSON_AIM_STRENGTH.get(),
-                0.25D, 2.0D);
+                0.25D, 4.0D);
 
         if (shouldSuspendCamera(minecraft, player)) {
             rememberCurrentAngles(currentYaw, currentPitch);
@@ -1428,14 +1432,13 @@ public final class LockOnController {
         LocalPlayer player = minecraft.player;
         if (player == null) return false;
         if (player.hasLineOfSight(lockedTarget)) return true;
+        if (allowsOccludedSteering()) return true;
         return CameraLockOnConfig.LineOfSightMode.fromConfig(CameraLockOnConfig.LINE_OF_SIGHT_MODE.get())
                 == CameraLockOnConfig.LineOfSightMode.GRACE_HUD;
     }
 
-    private static boolean allowsOccludedSteering() {
-        return CameraLockOnConfig.LineOfSightMode.fromConfig(CameraLockOnConfig.LINE_OF_SIGHT_MODE.get())
-                == CameraLockOnConfig.LineOfSightMode.GRACE_HUD
-                && CameraLockOnConfig.OCCLUDED_STEERING.get();
+    public static boolean allowsOccludedSteering() {
+        return CameraLockOnConfig.OCCLUDED_STEERING.get();
     }
 
     /** True only while the current target can legally drive player/camera aim. */

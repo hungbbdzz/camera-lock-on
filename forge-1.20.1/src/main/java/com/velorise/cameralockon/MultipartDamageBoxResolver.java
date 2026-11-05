@@ -34,6 +34,15 @@ public final class MultipartDamageBoxResolver {
 
     private MultipartDamageBoxResolver() {}
 
+    public static List<DamageBox> singleEntityBox(LivingEntity target) {
+        if (target == null) return Collections.emptyList();
+        AABB ownBox = target.getBoundingBox();
+        if (!isUsable(ownBox)) return Collections.emptyList();
+        List<DamageBox> result = new ArrayList<>(1);
+        result.add(new DamageBox(target, ownBox, "body", 2.0D, false));
+        return result;
+    }
+
     public static List<DamageBox> resolve(LivingEntity target) {
         if (target == null) return Collections.emptyList();
 
@@ -64,7 +73,7 @@ public final class MultipartDamageBoxResolver {
         VecCenter parentCenter = VecCenter.of(target.getBoundingBox());
         for (Map.Entry<Entity, String> entry : parts.entrySet()) {
             Entity part = entry.getKey();
-            if (part == null || part == target || part instanceof LivingEntity || part == target.getVehicle() || part.getVehicle() == target || part.isRemoved() || !part.isPickable()) continue;
+            if (part == null || part == target || part instanceof LivingEntity || part == target.getVehicle() || part.getVehicle() == target || part.isRemoved() || !part.isPickable() || !isLikelyMultipartSubEntity(part, target)) continue;
 
             AABB box = part.getBoundingBox();
             if (!isUsable(box)) continue;
@@ -115,16 +124,22 @@ public final class MultipartDamageBoxResolver {
                 if (Modifier.isStatic(field.getModifiers())) continue;
                 String name = field.getName().toLowerCase(Locale.ROOT);
                 Class<?> fieldType = field.getType();
-                boolean isNonLivingEntity = Entity.class.isAssignableFrom(fieldType)
-                        && !LivingEntity.class.isAssignableFrom(fieldType);
-                boolean isNonLivingEntityArray = fieldType.isArray()
+                String typeName = (fieldType.isArray() ? fieldType.getComponentType().getSimpleName() : fieldType.getSimpleName())
+                        .toLowerCase(Locale.ROOT);
+                boolean typeLooksLikePart = (typeName.contains("part") || typeName.contains("subentit")
+                        || typeName.contains("hitbox") || typeName.contains("multipart")
+                        || typeName.contains("segment") || typeName.contains("collider"))
+                        && !LivingEntity.class.isAssignableFrom(fieldType.isArray() ? fieldType.getComponentType() : fieldType);
+                boolean isPartEntityArray = fieldType.isArray()
                         && Entity.class.isAssignableFrom(fieldType.getComponentType())
+                        && fieldType.getComponentType() != Entity.class
                         && !LivingEntity.class.isAssignableFrom(fieldType.getComponentType());
                 boolean namedLikePart = (name.contains("part") || name.contains("subentit")
-                        || name.contains("head") || name.contains("neck") || name.contains("body")
-                        || name.contains("wing") || name.contains("tail"))
+                        || name.contains("hitbox") || name.contains("head") || name.contains("neck")
+                        || name.contains("body") || name.contains("torso") || name.contains("wing")
+                        || name.contains("tail") || name.contains("segment"))
                         && !LivingEntity.class.isAssignableFrom(fieldType);
-                if (isNonLivingEntity || isNonLivingEntityArray || namedLikePart) {
+                if (typeLooksLikePart || isPartEntityArray || namedLikePart) {
                     makeAccessible(field);
                     fields.add(field);
                 }
@@ -189,6 +204,34 @@ public final class MultipartDamageBoxResolver {
         if (normalized.contains("wing")) return 1.8D;
         if (normalized.contains("tail")) return 1.35D;
         return 2.2D;
+    }
+
+    private static boolean isLikelyMultipartSubEntity(Entity part, LivingEntity parent) {
+        if (part instanceof EnderDragonPart || part instanceof PartEntity<?>) return true;
+        String className = part.getClass().getSimpleName().toLowerCase(Locale.ROOT);
+        if (className.contains("crystal") || className.contains("projectile") || className.contains("arrow")
+                || className.contains("boat") || className.contains("minecart") || className.contains("item")
+                || className.contains("orb")) {
+            return false;
+        }
+        if (className.contains("part") || className.contains("subentit") || className.contains("hitbox")
+                || className.contains("segment") || className.contains("collider") || className.contains("bone")) {
+            return true;
+        }
+        for (Class<?> cursor = part.getClass(); cursor != null && cursor != Object.class && cursor != Entity.class; cursor = cursor.getSuperclass()) {
+            for (Field field : cursor.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers())) continue;
+                if (! field.getType().isAssignableFrom(parent.getClass()) && !parent.getClass().isAssignableFrom(field.getType())) continue;
+                try {
+                    makeAccessible(field);
+                    if (field.get(part) == parent) {
+                        return true;
+                    }
+                } catch (ReflectiveOperationException | RuntimeException ignored) {
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean isUsable(AABB box) {

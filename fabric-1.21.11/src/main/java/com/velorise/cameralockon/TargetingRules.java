@@ -220,6 +220,14 @@ public final class TargetingRules {
         );
     }
 
+    public static boolean hasPerEntityAimPoint(LivingEntity target) {
+        if (target == null) {
+            return false;
+        }
+        Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
+        return id != null && EntityAimPointStore.has(id.toString());
+    }
+
     public static AimPoint findPerEntityAimPoint(String entityId) {
         EntityAimPointStore.Entry entry = EntityAimPointStore.get(entityId);
         return entry == null ? null : new AimPoint(entry.horizontal(), entry.vertical());

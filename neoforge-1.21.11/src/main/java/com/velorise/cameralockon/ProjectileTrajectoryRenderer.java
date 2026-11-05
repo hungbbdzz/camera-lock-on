@@ -56,9 +56,13 @@ public final class ProjectileTrajectoryRenderer {
         Vec3 launchDirection = applyPitchOffset(aim.subtract(start), profile.pitchOffsetDegrees);
         if (launchDirection.lengthSqr() < 1.0E-8D) return;
 
+        CameraLockOnConfig.MultipartAimMode multipartAimMode = CameraLockOnConfig.MultipartAimMode
+                .fromConfig(CameraLockOnConfig.MULTIPART_AIM_MODE.get());
         List<MultipartDamageBoxResolver.DamageBox> targetDamageBoxes =
                 lockedTarget != null && !lockedTarget.isRemoved()
-                        ? MultipartDamageBoxResolver.resolve(lockedTarget)
+                        ? (multipartAimMode != CameraLockOnConfig.MultipartAimMode.OFF
+                                ? MultipartDamageBoxResolver.resolve(lockedTarget)
+                                : MultipartDamageBoxResolver.singleEntityBox(lockedTarget))
                         : Collections.emptyList();
 
         double currentSpeed = profile.currentSpeed(player, stack);
